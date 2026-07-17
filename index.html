@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aegis AI Bug Hunter - Premium Local Codebase & Web Tester</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div>
+        <div class="brand">
+          <div class="brand-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <circle cx="12" cy="11" r="3"/>
+              <path d="M12 14v3"/>
+            </svg>
+          </div>
+          <span class="brand-name">AEGIS AI</span>
+        </div>
+        
+        <nav>
+          <ul class="nav-links">
+            <li>
+              <a href="#" class="nav-item active" data-view="dashboard">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+                Dashboard
+              </a>
+            </li>
+            <li>
+              <a href="#" class="nav-item" data-view="bug-hunter">
+                <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                Bug Hunter
+              </a>
+            </li>
+            <li>
+              <a href="#" class="nav-item" data-view="test-generator">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                Test Writer
+              </a>
+            </li>
+            <li>
+              <a href="#" class="nav-item" data-view="web-tester">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+                Web Tester
+              </a>
+            </li>
+            <li>
+              <a href="#" class="nav-item" data-view="code-chat">
+                <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Code Chat
+              </a>
+            </li>
+            <li>
+              <a href="#" class="nav-item" data-view="settings">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                Settings
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+      
+      <div class="sidebar-footer">
+        <div class="api-status" style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="status-dot" id="status-dot"></span>
+            <span id="status-text">Gemini Offline</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="status-dot" id="browser-status-dot"></span>
+            <span id="browser-status-text">Browser Disconnected</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="main-content">
+      <header class="top-bar">
+        <h2 class="page-title" id="page-title">Dashboard</h2>
+        <div class="workspace-badge" id="workspace-badge" style="display: none;">
+          <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <span id="active-project-name">No Project Loaded</span>
+        </div>
+      </header>
+
+      <div class="views-container">
+        
+        <!-- DASHBOARD VIEW -->
+        <section id="view-dashboard" class="view active">
+          <!-- Main Stats -->
+          <div class="stats-row">
+            <div class="stat-card" id="stat-files">
+              <div class="stat-icon">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value" id="val-total-files">0</span>
+                <span class="stat-label">Total Files</span>
+              </div>
+            </div>
+            
+            <div class="stat-card critical" id="stat-bugs">
+              <div class="stat-icon">
+                <svg viewBox="0 0 24 24"><path d="M18 10a6 6 0 0 0-12 0c0 7 3 9 3 9h6s3-2 3-9"/><path d="M6 10H4M20 10h-2M12 4V2M9 19c0 1.5 1.5 3 3 3s3-1.5 3-3"/></svg>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value" id="val-total-bugs">0</span>
+                <span class="stat-label">Bugs Found</span>
+              </div>
+            </div>
+            
+            <div class="stat-card success" id="stat-score">
+              <div class="stat-icon">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value" id="val-health-score">100%</span>
+                <span class="stat-label">Code Health</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="dashboard-grid">
+            <!-- Left Side: Directory Picker and Scanning console -->
+            <div>
+              <div class="glass-panel" id="folder-picker-panel">
+                <h3 style="margin-bottom: 16px;">Select Project Folder</h3>
+                <p style="margin-bottom: 20px; font-size: 0.9rem; color: hsl(215, 20%, 75%);">
+                  Select a directory on your machine to analyze. The application runs entirely in your browser using the HTML5 File System API and doesn't upload your source code to any external backend.
+                </p>
+                <div class="picker-container" id="folder-picker">
+                  <div class="picker-icon">📂</div>
+                  <h4>Choose Local Folder</h4>
+                  <p style="font-size: 0.8rem; color: hsl(215, 20%, 55%); margin-top: 8px;">Supports JS, TS, Python, HTML, CSS, C++, Java, Rust, Go, etc.</p>
+                </div>
+              </div>
+
+              <div class="glass-panel" id="scanner-status-panel" style="display: none;">
+                <div class="scan-progress-panel">
+                  <div class="radar-spinner"></div>
+                  <h3 id="scan-heading">Scanning Project...</h3>
+                  <p id="scan-subtext" style="font-size: 0.9rem; color: hsl(215, 20%, 65%); margin-top: 8px;">Initializing Directory Tree...</p>
+                  <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="scan-progress-fill"></div>
+                  </div>
+                  <button class="btn btn-secondary" id="btn-cancel-scan" style="margin-top: 24px;">Cancel Scan</button>
+                </div>
+              </div>
+
+              <!-- Console logs panel -->
+              <div class="glass-panel">
+                <div class="flex-space">
+                  <h3>Agent Console Logs</h3>
+                  <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;" id="btn-clear-console">Clear</button>
+                </div>
+                <div class="console-container" id="console-log">
+                  <div class="console-line info">[System] Aegis AI Bug Hunter Ready. Please enter your Gemini API Key in Settings to get started.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Side: File Tree / File Explorer -->
+            <div class="glass-panel" style="display: flex; flex-direction: column;">
+              <h3 style="margin-bottom: 16px;">Project Files</h3>
+              <div class="file-tree-container" style="flex-grow: 1;" id="file-tree-root">
+                <div class="empty-state">
+                  <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                  <p style="font-size: 0.9rem;">No project loaded.<br>Select a folder to view files.</p>
+                </div>
+              </div>
+              <button class="btn btn-primary" id="btn-start-scan" style="margin-top: 16px;" disabled>Run Full Scan</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- BUG HUNTER VIEW -->
+        <section id="view-bug-hunter" class="view">
+          <div class="split-view">
+            <!-- Left Side: Files list with bugs -->
+            <div class="split-left">
+              <h3 style="font-size: 1.1rem; margin-bottom: 8px;">Scanned Files</h3>
+              <div id="bug-files-list" style="display: flex; flex-direction: column; gap: 8px;">
+                <div class="empty-state" style="padding: 30px 10px;">
+                  <p style="font-size: 0.85rem;">No bugs found yet. Run a project scan first.</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Right Side: Bugs list / Details -->
+            <div class="split-right">
+              <div class="flex-space" style="margin-bottom: 8px;">
+                <h3 style="font-size: 1.1rem;">Bug Reports</h3>
+                <span class="workspace-badge" style="font-size: 0.75rem;" id="bug-stats-badge">0 Issues Found</span>
+              </div>
+              <div id="bug-details-list">
+                <div class="empty-state">
+                  <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  <p style="font-size: 0.9rem;">Run a code scan to detect bugs, code smells, and vulnerabilities in your project files.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TEST WRITER VIEW -->
+        <section id="view-test-generator" class="view">
+          <div class="split-view">
+            <!-- Left Side: File Picker for Tests -->
+            <div class="split-left">
+              <h3 style="font-size: 1.1rem; margin-bottom: 8px;">Select Source File</h3>
+              <div id="test-files-list" class="file-tree-container" style="max-height: calc(100vh - 250px);">
+                <div class="empty-state" style="padding: 30px 10px;">
+                  <p style="font-size: 0.85rem;">No project loaded. Load a folder first.</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Right Side: Test Writer Workspace -->
+            <div class="split-right">
+              <div class="glass-panel" id="test-writer-panel" style="margin-bottom: 0; flex-grow: 1; display: flex; flex-direction: column;">
+                <div class="flex-space" style="margin-bottom: 20px;">
+                  <h3>Test Case Generator</h3>
+                  <div class="form-group" style="margin-bottom: 0; display: flex; align-items: center; gap: 12px;">
+                    <label class="form-label" style="margin-bottom: 0; white-space: nowrap;">Framework:</label>
+                    <select class="form-input" id="test-framework" style="padding: 6px 12px; width: auto;">
+                      <option value="auto">Auto-detect</option>
+                      <option value="jest">Jest / Javascript</option>
+                      <option value="pytest">PyTest / Python</option>
+                      <option value="unittest">Unittest / Python</option>
+                      <option value="mocha">Mocha / Chai</option>
+                      <option value="junit">JUnit / Java</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div id="test-writer-editor-container" style="flex-grow: 1; display: flex; flex-direction: column; gap: 16px;">
+                  <div class="empty-state" id="test-writer-empty-state">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="11" y2="17"/></svg>
+                    <p style="font-size: 0.9rem;">Select a file on the left side to write unit tests for.</p>
+                  </div>
+                  
+                  <div id="test-writer-workspace" style="display: none; flex-grow: 1; flex-direction: column; gap: 16px; height: calc(100% - 40px);">
+                    <div style="font-size: 0.9rem; color: var(--color-primary); font-weight: 500;" id="test-writer-selected-file">
+                      Selected: database.py
+                    </div>
+                    
+                    <div style="display: grid; grid-template-rows: 1fr; flex-grow: 1; min-height: 250px;">
+                      <div class="diff-container" style="margin: 0; display: flex; flex-direction: column; background-color: hsl(222, 47%, 3%);">
+                        <div class="diff-header">
+                          <span>Generated Test Cases</span>
+                          <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" id="btn-copy-test">Copy Code</button>
+                        </div>
+                        <div class="diff-body" style="flex-grow: 1; max-height: unset; padding: 16px;">
+                          <pre style="margin: 0;"><code id="test-code-block" style="font-family: var(--font-mono); color: hsl(210, 40%, 90%); font-size: 0.85rem;"></code></pre>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px;">
+                      <button class="btn btn-primary" id="btn-generate-test">Generate Tests</button>
+                      <button class="btn btn-secondary" id="btn-save-test" style="display: none;">Save to Disk</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- WEB TESTER VIEW -->
+        <section id="view-web-tester" class="view">
+          <!-- Web Connection Warning Panel -->
+          <div class="glass-panel" id="web-disconnected-alert" style="border-color: var(--color-critical); background-color: hsla(0, 84%, 60%, 0.05);">
+            <div style="display: flex; gap: 16px; align-items: flex-start;">
+              <span style="font-size: 2rem;">⚠️</span>
+              <div>
+                <h3 style="color: var(--color-critical); margin-bottom: 8px;">Browser Debugger Offline</h3>
+                <p style="font-size: 0.9rem; line-height: 1.5; color: hsl(215, 20%, 80%);">
+                  To test website links, Aegis needs to connect to Microsoft Edge running in debug mode. 
+                  Please run the following command in PowerShell to launch the debugger:
+                </p>
+                <code style="display: block; background-color: hsl(222, 47%, 4%); border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 6px; margin: 12px 0; font-family: var(--font-mono); font-size: 0.85rem; color: var(--color-warning);">
+                  cd "C:\Users\rajar\.gemini\antigravity\scratch\aegis-bug-hunter"; powershell -ExecutionPolicy Bypass -File .\start_edge.ps1
+                </code>
+                <button class="btn btn-secondary" id="btn-retry-browser-conn" style="margin-top: 8px;">Retry Connection</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Web Tester Workspace Grid -->
+          <div id="web-tester-workspace" style="display: none; grid-template-columns: 1fr 1fr; gap: 24px; height: calc(100vh - 190px); overflow: hidden;">
+            
+            <!-- Left Panel: Target config and visual feedback -->
+            <div style="display: flex; flex-direction: column; gap: 20px; overflow-y: auto; padding-right: 8px;">
+              <div class="glass-panel" style="margin-bottom: 0;">
+                <h3 style="margin-bottom: 16px;">Test Configuration</h3>
+                
+                <div class="form-group">
+                  <label class="form-label" for="web-target-url">Website Link / Product URL</label>
+                  <input type="text" id="web-target-url" class="form-input" placeholder="https://example.com" value="https://example.com">
+                </div>
+                
+                <div class="form-group">
+                  <label class="form-label" for="web-test-goal">Agent Objective / Testing Goal</label>
+                  <input type="text" id="web-test-goal" class="form-input" placeholder="Crawl pages, find broken links, layout issues, and console errors" value="Explore the site, find layout bugs, broken links, and console exceptions.">
+                </div>
+                
+                <div style="display: flex; gap: 12px;">
+                  <button class="btn btn-primary" id="btn-start-web-test">Start Web Agent</button>
+                  <button class="btn btn-secondary text-critical" id="btn-stop-web-test" disabled style="color: var(--color-critical);">Stop Agent</button>
+                </div>
+              </div>
+
+              <!-- Live Browser View Screen -->
+              <div class="glass-panel" style="flex-grow: 1; display: flex; flex-direction: column; min-height: 280px; margin-bottom: 0;">
+                <div class="flex-space" style="margin-bottom: 10px;">
+                  <h4 style="font-size: 0.9rem; color: hsl(215, 20%, 75%);">Live Sandbox Browser</h4>
+                  <span class="bug-badge info" id="browser-view-tab-title" style="text-transform: none; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">about:blank</span>
+                </div>
+                <div style="flex-grow: 1; background-color: #0c0f16; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center;">
+                  <img id="browser-screenshot" style="width: 100%; height: 100%; object-fit: contain; display: none;" alt="Browser Output">
+                  <div id="browser-canvas-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></div>
+                  <div class="empty-state" id="browser-screen-empty">
+                    <p style="font-size: 0.85rem;">Agent idle. Enter URL and run scan to start visual feedback.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Panel: Agent thinking, logs, and bugs found -->
+            <div style="display: flex; flex-direction: column; gap: 20px; overflow-y: auto; padding-right: 8px;">
+              <!-- Agent execution log -->
+              <div class="glass-panel" style="flex-grow: 1; display: flex; flex-direction: column; margin-bottom: 0; min-height: 250px;">
+                <h3>Agent Activity Log</h3>
+                <div class="console-container" id="web-agent-timeline" style="flex-grow: 1; height: 100%; margin-top: 12px; background-color: hsl(222, 47%, 4%);">
+                  <div class="console-line info">[System] Web agent ready. Waiting for run trigger...</div>
+                </div>
+              </div>
+
+              <!-- Console logs from the web page -->
+              <div class="glass-panel" style="height: 180px; margin-bottom: 0; display: flex; flex-direction: column;">
+                <h3>Page Console Errors</h3>
+                <div class="console-container" id="web-page-console" style="flex-grow: 1; height: 100%; margin-top: 12px; background-color: hsl(222, 47%, 3%);">
+                  <div class="console-line info">[Console] Capture active. Script exceptions will appear here...</div>
+                </div>
+              </div>
+
+              <!-- Bugs discovered in this session -->
+              <div class="glass-panel" style="flex-grow: 1; display: flex; flex-direction: column; margin-bottom: 0; min-height: 200px;">
+                <h3>Bugs Discovered</h3>
+                <div id="web-agent-bugs-list" style="margin-top: 12px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex-grow: 1;">
+                  <div class="empty-state" style="padding: 20px 10px;">
+                    <p style="font-size: 0.85rem;">No bugs detected on this run yet.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+          </div>
+        </section>
+
+        <!-- CODE CHAT VIEW -->
+        <section id="view-code-chat" class="view">
+          <div class="split-view">
+            <!-- Left Side: Context Files List -->
+            <div class="split-left">
+              <h3 style="font-size: 1.1rem; margin-bottom: 8px;">Select Chat Context</h3>
+              <div id="chat-context-files" class="file-tree-container" style="max-height: calc(100vh - 250px);">
+                <div class="empty-state" style="padding: 30px 10px;">
+                  <p style="font-size: 0.85rem;">No project loaded. Load a folder first.</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Right Side: Chat Workspace -->
+            <div class="split-right">
+              <div class="chat-container" style="height: 100%;">
+                <div class="diff-header" style="background-color: var(--bg-sidebar); border-bottom: 1px solid var(--border-color); padding: 12px 20px;">
+                  <span id="chat-context-indicator" style="font-weight: 500;">Context: General Agent (No File Selected)</span>
+                  <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" id="btn-reset-chat">Clear History</button>
+                </div>
+                <div class="chat-messages" id="chat-messages-container">
+                  <div class="chat-message assistant">
+                    Hello! I'm Aegis, your AI testing agent. Select a file on the left side to load it into my context, and ask me to explain it, find bugs, optimize it, or explain how to write integrations for it!
+                  </div>
+                </div>
+                <div class="chat-input-bar">
+                  <input type="text" class="chat-input" id="chat-user-input" placeholder="Ask about the file or codebase..." disabled>
+                  <button class="btn btn-primary" id="btn-send-chat" style="padding: 0 20px;" disabled>Send</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SETTINGS VIEW -->
+        <section id="view-settings" class="view">
+          <div class="glass-panel" style="max-width: 650px;">
+            <h3 style="margin-bottom: 20px; font-size: 1.25rem;">Aegis Settings</h3>
+            
+            <div class="form-group">
+              <label class="form-label" for="gemini-api-key">Gemini API Key</label>
+              <input type="password" id="gemini-api-key" class="form-input" placeholder="AIzaSy...">
+              <p style="font-size: 0.8rem; color: hsl(215, 20%, 55%); margin-top: 6px;">
+                Get a free key in 30 seconds from the <a href="https://aistudio.google.com/" target="_blank" style="color: var(--color-primary); text-decoration: none;">Google AI Studio</a>.
+              </p>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="gemini-model">Gemini Model</label>
+              <select id="gemini-model" class="form-input">
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended - Fastest & Free)</option>
+                <option value="gemini-2.5-pro">Gemini 2.5 Pro (Highly Detailed Analysis)</option>
+                <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fallback)</option>
+              </select>
+            </div>
+
+            <div style="margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 20px; display: flex; gap: 12px;">
+              <button class="btn btn-primary" id="btn-save-settings">Save Configurations</button>
+              <button class="btn btn-secondary" id="btn-remove-key" style="color: var(--color-critical);">Clear Key</button>
+            </div>
+          </div>
+
+          <div class="glass-panel" style="max-width: 650px;">
+            <h3 style="margin-bottom: 12px;">Security & Privacy Guarantee</h3>
+            <p style="font-size: 0.9rem; line-height: 1.5; color: hsl(215, 20%, 75%);">
+              Aegis is built on a client-side sandbox architecture.
+            </p>
+            <ul style="margin-left: 20px; margin-top: 10px; font-size: 0.9rem; color: hsl(215, 20%, 75%); display: flex; flex-direction: column; gap: 8px;">
+              <li><strong>Local Processing:</strong> All folder directory exploration, tree reading, and file editing are done directly in your browser using standard HTML5 APIs.</li>
+              <li><strong>Secure Transport:</strong> Your code is sent directly from your browser to Google's API servers. No intermediary server stores or processes your code.</li>
+              <li><strong>Encrypted Storage:</strong> Your Gemini API Key is stored only in your local browser's <code>localStorage</code>, which remains on your machine and cannot be accessed by other websites.</li>
+            </ul>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

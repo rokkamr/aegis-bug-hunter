@@ -1,0 +1,16 @@
+# Browser debug profiles (local only)
+browser-debug-profile/
+edge-debug-profile/
+
+# Local server scripts (PowerShell, not needed for Vercel)
+server.ps1
+start_edge.ps1
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
