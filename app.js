@@ -2,6 +2,9 @@
 
 // State Management
 const state = {
+  token: localStorage.getItem('aegis_token') || '',
+  userEmail: localStorage.getItem('aegis_user_email') || '',
+  projectId: localStorage.getItem('aegis_project_id') || '',
   apiKey: localStorage.getItem('aegis_api_key') || '',
   model: localStorage.getItem('aegis_model') || 'gemini-2.5-flash',
   directoryHandle: null,
@@ -29,7 +32,7 @@ const state = {
   webSessionTabId: null,
   
   // Test Case Manager State
-  testCases: JSON.parse(localStorage.getItem('aegis_test_cases') || '[]'),
+  testCases: [],
   
   // API Tester State
   apiHistory: JSON.parse(localStorage.getItem('aegis_api_history') || '[]'),
@@ -44,6 +47,20 @@ const state = {
 
 // UI Elements
 const el = {
+  // Auth Elements
+  authOverlay: document.getElementById('auth-overlay'),
+  authTitle: document.getElementById('auth-title'),
+  authEmail: document.getElementById('auth-email'),
+  authPassword: document.getElementById('auth-password'),
+  authErrorMsg: document.getElementById('auth-error-msg'),
+  btnAuthSubmit: document.getElementById('btn-auth-submit'),
+  authToggleText: document.getElementById('auth-toggle-text'),
+  linkAuthToggle: document.getElementById('link-auth-toggle'),
+  userProfileSection: document.getElementById('user-profile-section'),
+  userAvatar: document.getElementById('user-avatar'),
+  userEmailDisplay: document.getElementById('user-email-display'),
+  btnLogout: document.getElementById('btn-logout'),
+
   navItems: document.querySelectorAll('.nav-item'),
   views: document.querySelectorAll('.view'),
   pageTitle: document.getElementById('page-title'),
@@ -306,6 +323,9 @@ el.folderPicker.addEventListener('click', async () => {
     state.projectName = state.directoryHandle.name;
     el.activeProjectName.textContent = state.projectName;
     el.workspaceBadge.style.display = 'flex';
+    
+    // Sync project with cloud DB
+    saveProjectToDb(state.projectName, state.projectName);
     
     logConsole(`Directory loaded: ${state.projectName}. Starting scan...`, "success");
     
@@ -655,6 +675,9 @@ Each object in the array MUST contain the following fields:
   
   logConsole(`Full scan completed! Found ${state.bugs.length} total bugs.`, 'success');
   renderFileTree();
+  
+  // Sync bug reports with cloud DB
+  saveBugsToDb();
   
   if (state.bugs.length > 0) {
     switchView('bug-hunter');
@@ -1896,7 +1919,7 @@ function closeTestCaseForm() {
   if (el.tcFormCategory) el.tcFormCategory.value = '';
 }
 
-function saveTestCase() {
+async function saveTestCase() {
   const title = el.tcFormTitle ? el.tcFormTitle.value.trim() : '';
   if (!title) {
     alert('Please enter a test case title.');
@@ -1912,50 +1935,69 @@ function saveTestCase() {
     category: el.tcFormCategory ? el.tcFormCategory.value.trim() : ''
   };
 
-  if (editingTestCaseId) {
-    // Update existing
-    const idx = state.testCases.findIndex(tc => tc.id === editingTestCaseId);
-    if (idx !== -1) {
-      state.testCases[idx] = { ...state.testCases[idx], ...tcData };
-      logConsole(`Updated test case: "${title}"`, 'success');
+  try {
+    if (editingTestCaseId) {
+      const response = await apiFetch('/api/test-cases', {
+        method: 'PUT',
+        body: JSON.stringify({ id: editingTestCaseId, ...tcData })
+      });
+      if (response.ok) {
+        logConsole(`Updated test case: "${title}"`, 'success');
+      }
+    } else {
+      const id = 'tc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+      const response = await apiFetch('/api/test-cases', {
+        method: 'POST',
+        body: JSON.stringify({
+          id,
+          projectId: state.projectId ? parseInt(state.projectId, 10) : null,
+          status: 'pending',
+          ...tcData
+        })
+      });
+      if (response.ok) {
+        logConsole(`Created test case: "${title}"`, 'success');
+      }
     }
-  } else {
-    // Create new
-    const newCase = {
-      id: 'tc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-      ...tcData,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      executedAt: null,
-      notes: ''
-    };
-    state.testCases.push(newCase);
-    logConsole(`Created test case: "${title}"`, 'success');
+    closeTestCaseForm();
+    await syncTestCasesFromDb();
+  } catch (err) {
+    logConsole(`Failed to save test case: ${err.message}`, 'error');
   }
-
-  localStorage.setItem('aegis_test_cases', JSON.stringify(state.testCases));
-  closeTestCaseForm();
-  renderTestCases();
-  updateTestCaseStats();
 }
 
-function deleteTestCase(id) {
-  state.testCases = state.testCases.filter(tc => tc.id !== id);
-  localStorage.setItem('aegis_test_cases', JSON.stringify(state.testCases));
-  renderTestCases();
-  updateTestCaseStats();
-  logConsole(`Deleted test case: ${id}`, 'info');
+async function deleteTestCase(id) {
+  try {
+    const response = await apiFetch(`/api/test-cases?id=${id}`, {
+      method: 'DELETE'
+    });
+    if (response.ok) {
+      logConsole(`Deleted test case: ${id}`, 'info');
+      await syncTestCasesFromDb();
+    }
+  } catch (err) {
+    logConsole(`Failed to delete test case: ${err.message}`, 'error');
+  }
 }
 
-function updateTestCaseStatus(id, newStatus) {
-  const tc = state.testCases.find(tc => tc.id === id);
-  if (tc) {
-    tc.status = newStatus;
-    tc.executedAt = new Date().toISOString();
-    localStorage.setItem('aegis_test_cases', JSON.stringify(state.testCases));
-    renderTestCases();
-    updateTestCaseStats();
-    logConsole(`Test case "${tc.title}" marked as ${newStatus}`, 'info');
+async function updateTestCaseStatus(id, newStatus) {
+  try {
+    const executedAt = new Date().toISOString();
+    const response = await apiFetch('/api/test-cases', {
+      method: 'PUT',
+      body: JSON.stringify({
+        id,
+        status: newStatus,
+        executedAt,
+        notes: ''
+      })
+    });
+    if (response.ok) {
+      logConsole(`Test case marked as ${newStatus}`, 'info');
+      await syncTestCasesFromDb();
+    }
+  } catch (err) {
+    logConsole(`Failed to update status: ${err.message}`, 'error');
   }
 }
 
@@ -1984,25 +2026,29 @@ async function aiGenerateTestCases() {
     const generated = JSON.parse(cleaned);
 
     if (Array.isArray(generated) && generated.length > 0) {
-      generated.forEach(item => {
-        const newCase = {
-          id: 'tc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-          title: item.title || 'Untitled Test Case',
-          description: item.description || '',
-          steps: item.steps || '',
-          expectedResult: item.expectedResult || '',
-          priority: item.priority || 'medium',
-          category: item.category || '',
-          status: 'pending',
-          createdAt: new Date().toISOString(),
-          executedAt: null,
-          notes: ''
-        };
-        state.testCases.push(newCase);
+      logConsole(`AI generated ${generated.length} test cases. Saving to DB...`, 'info');
+      
+      const savePromises = generated.map(item => {
+        const id = 'tc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        return apiFetch('/api/test-cases', {
+          method: 'POST',
+          body: JSON.stringify({
+            id,
+            projectId: state.projectId ? parseInt(state.projectId, 10) : null,
+            title: item.title || 'Untitled Test Case',
+            description: item.description || '',
+            steps: item.steps || '',
+            expectedResult: item.expectedResult || '',
+            priority: item.priority || 'medium',
+            category: item.category || '',
+            status: 'pending'
+          })
+        });
       });
-
-      localStorage.setItem('aegis_test_cases', JSON.stringify(state.testCases));
-      logConsole(`AI generated ${generated.length} test cases from user story.`, 'success');
+      
+      await Promise.all(savePromises);
+      logConsole(`Successfully saved ${generated.length} test cases to cloud DB.`, 'success');
+      await syncTestCasesFromDb();
     } else {
       logConsole('AI returned no test cases. Try a more detailed user story.', 'warn');
     }
@@ -2014,8 +2060,6 @@ async function aiGenerateTestCases() {
       el.btnAiGenerateCases.removeAttribute('disabled');
       el.btnAiGenerateCases.textContent = 'AI Generate';
     }
-    renderTestCases();
-    updateTestCaseStats();
   }
 }
 
@@ -2802,15 +2846,218 @@ function renderPerfResults(data) {
   }
 }
 
-function initPerformanceAnalyzer() {
-  if (el.btnRunPerfAudit) {
-    el.btnRunPerfAudit.addEventListener('click', runPerformanceAudit);
+// ============================================================
+// AUTHENTICATION & BACKEND STORAGE INTERACTION
+// ============================================================
+
+let authMode = 'login'; // 'login' or 'signup'
+
+function initAuth() {
+  if (el.linkAuthToggle) {
+    el.linkAuthToggle.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (authMode === 'login') {
+        authMode = 'signup';
+        el.authTitle.textContent = 'Create Aegis Account';
+        el.btnAuthSubmit.textContent = 'Sign Up';
+        el.authToggleText.textContent = 'Already have an account?';
+        el.linkAuthToggle.textContent = 'Sign In';
+      } else {
+        authMode = 'login';
+        el.authTitle.textContent = 'Login to Aegis';
+        el.btnAuthSubmit.textContent = 'Sign In';
+        el.authToggleText.textContent = "Don't have an account?";
+        el.linkAuthToggle.textContent = 'Sign Up';
+      }
+      el.authErrorMsg.style.display = 'none';
+    });
+  }
+
+  if (el.btnAuthSubmit) {
+    el.btnAuthSubmit.addEventListener('click', handleAuthSubmit);
+  }
+
+  if (el.btnLogout) {
+    el.btnLogout.addEventListener('click', handleLogout);
+  }
+
+  updateAuthState();
+}
+
+function updateAuthState() {
+  if (state.token) {
+    if (el.authOverlay) el.authOverlay.style.display = 'none';
+    if (el.userProfileSection) el.userProfileSection.style.display = 'block';
+    if (el.userEmailDisplay) el.userEmailDisplay.textContent = state.userEmail;
+    if (el.userAvatar && state.userEmail) {
+      el.userAvatar.textContent = state.userEmail.charAt(0).toUpperCase();
+    }
+    
+    // Auto-reload test cases from DB
+    syncTestCasesFromDb();
+  } else {
+    if (el.authOverlay) el.authOverlay.style.display = 'flex';
+    if (el.userProfileSection) el.userProfileSection.style.display = 'none';
   }
 }
 
+async function handleAuthSubmit() {
+  const email = el.authEmail.value.trim();
+  const password = el.authPassword.value;
+
+  if (!email || !password) {
+    showAuthError('Email and password are required');
+    return;
+  }
+
+  if (authMode === 'signup' && password.length < 6) {
+    showAuthError('Password must be at least 6 characters long');
+    return;
+  }
+
+  el.btnAuthSubmit.setAttribute('disabled', 'true');
+  el.btnAuthSubmit.textContent = authMode === 'login' ? 'Signing In...' : 'Signing Up...';
+  el.authErrorMsg.style.display = 'none';
+
+  try {
+    const url = authMode === 'login' ? '/api/auth/login' : '/api/auth/signup';
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Authentication failed');
+    }
+
+    // Success
+    state.token = data.token;
+    state.userEmail = data.email;
+    localStorage.setItem('aegis_token', data.token);
+    localStorage.setItem('aegis_user_email', data.email);
+
+    // Reset inputs
+    el.authEmail.value = '';
+    el.authPassword.value = '';
+
+    updateAuthState();
+    logConsole('[Auth]', `Logged in as ${data.email}`, 'info');
+  } catch (err) {
+    showAuthError(err.message);
+  } finally {
+    el.btnAuthSubmit.removeAttribute('disabled');
+    el.btnAuthSubmit.textContent = authMode === 'login' ? 'Sign In' : 'Sign Up';
+  }
+}
+
+function handleLogout() {
+  state.token = '';
+  state.userEmail = '';
+  state.projectId = '';
+  localStorage.removeItem('aegis_token');
+  localStorage.removeItem('aegis_user_email');
+  localStorage.removeItem('aegis_project_id');
+  updateAuthState();
+  logConsole('[Auth]', 'Logged out', 'info');
+}
+
+function showAuthError(msg) {
+  if (el.authErrorMsg) {
+    el.authErrorMsg.textContent = msg;
+    el.authErrorMsg.style.display = 'block';
+  }
+}
+
+// Authenticated Fetch Helper
+async function apiFetch(url, options = {}) {
+  options.headers = options.headers || {};
+  if (state.token) {
+    options.headers['Authorization'] = `Bearer ${state.token}`;
+  }
+  
+  if (options.body && !options.headers['Content-Type']) {
+    options.headers['Content-Type'] = 'application/json';
+  }
+
+  try {
+    const response = await fetch(url, options);
+    
+    if (response.status === 401) {
+      handleLogout();
+      throw new Error('Session expired. Please log in again.');
+    }
+    
+    return response;
+  } catch (err) {
+    console.error('API Fetch Error:', err);
+    throw err;
+  }
+}
+
+async function saveProjectToDb(name, path) {
+  if (!state.token) return;
+  try {
+    const response = await apiFetch('/api/projects', {
+      method: 'POST',
+      body: JSON.stringify({ name, path })
+    });
+    if (response.ok) {
+      const data = await response.json();
+      state.projectId = data.id;
+      localStorage.setItem('aegis_project_id', data.id);
+      logConsole(`Project synced in cloud DB (ID: ${data.id})`, 'success');
+      syncTestCasesFromDb();
+    }
+  } catch (err) {
+    console.error('Error saving project to DB:', err);
+  }
+}
+
+async function syncTestCasesFromDb() {
+  if (!state.token) return;
+  try {
+    const response = await apiFetch('/api/test-cases');
+    if (response.ok) {
+      const data = await response.json();
+      state.testCases = data;
+      renderTestCases();
+      updateTestCaseStats();
+    }
+  } catch (err) {
+    console.error('Error syncing test cases:', err);
+  }
+}
+
+async function saveBugsToDb() {
+  if (!state.token || state.bugs.length === 0) return;
+  try {
+    const bugsPayload = state.bugs.map(b => ({
+      projectId: state.projectId ? parseInt(state.projectId, 10) : null,
+      fileName: b.file,
+      bugType: b.bug,
+      severity: b.severity,
+      description: b.description,
+      originalCode: b.originalCode,
+      fixedCode: b.fixedCode
+    }));
+
+    const response = await apiFetch('/api/bugs', {
+      method: 'POST',
+      body: JSON.stringify(bugsPayload)
+    });
+    if (response.ok) {
+      logConsole('Bug reports synced to database.', 'success');
+    }
+  } catch (err) {
+    console.error('Error saving bugs to DB:', err);
+  }
+}
 
 // App Startup Initializations
 function startup() {
+  initAuth();
   initSettings();
   updateChatState();
   

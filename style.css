@@ -2041,3 +2041,39 @@ body {
   }
 }
 
+/* ============================================================
+   AUTHENTICATION OVERLAY & CARD
+   ============================================================ */
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(6, 9, 14, 0.85);
+  backdrop-filter: blur(12px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.auth-card {
+  width: min(420px, 90vw);
+  padding: 40px;
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
