@@ -2,6 +2,9 @@ const { sql } = require('@vercel/postgres');
 const crypto = require('crypto');
 
 async function initDb() {
+  if (!process.env.POSTGRES_URL && !process.env.POSTGRES_URL_NON_POOLING && !process.env.DATABASE_URL) {
+    throw new Error('Database not connected on Vercel. Please open your Vercel Dashboard -> Storage tab -> click "Connect Postgres" to activate the database.');
+  }
   try {
     // Create users table
     await sql`
