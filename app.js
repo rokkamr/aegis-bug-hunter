@@ -1993,6 +1993,28 @@ function cleanGeminiJson(text) {
 // Currently editing test case ID (null = creating new)
 let editingTestCaseId = null;
 
+// --- localStorage Persistence ---
+const TC_STORAGE_KEY = 'aegis_test_cases';
+
+function loadTestCasesFromStorage() {
+  try {
+    const stored = localStorage.getItem(TC_STORAGE_KEY);
+    if (stored) {
+      state.testCases = JSON.parse(stored);
+    }
+  } catch (e) {
+    console.warn('Failed to load test cases from localStorage:', e);
+  }
+}
+
+function saveTestCasesToStorage() {
+  try {
+    localStorage.setItem(TC_STORAGE_KEY, JSON.stringify(state.testCases));
+  } catch (e) {
+    console.warn('Failed to save test cases to localStorage:', e);
+  }
+}
+
 function renderTestCases() {
   if (!el.testCaseListContainer) return;
   el.testCaseListContainer.innerHTML = '';
@@ -2046,19 +2068,21 @@ function renderTestCases() {
           <div style="font-size:0.8rem; color:var(--text-secondary); line-height:1.4;">${escapeHTML(truncatedDesc)}</div>
         </div>
         <div style="display:flex; gap:6px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end;">
-          <span class="tc-priority-badge" style="background:${priorityColors[tc.priority] || priorityColors.medium}; color:#fff; padding:2px 8px; border-radius:10px; font-size:0.7rem; font-weight:600; text-transform:uppercase;">${escapeHTML(tc.priority)}</span>
+          <span class="tc-priority-badge" style="background:${priorityColors[tc.priority] || priorityColors.medium}; color:#fff; padding:2px 8px; border-radius:10px; font-size:0.7rem; font-weight:600; text-transform:uppercase;">${escapeHTML(tc.priority || 'medium')}</span>
           <span class="tc-status-badge" style="background:${statusColors[tc.status] || statusColors.pending}; color:#fff; padding:2px 8px; border-radius:10px; font-size:0.7rem; font-weight:600;">${statusLabels[tc.status] || statusLabels.pending}</span>
         </div>
       </div>
       ${tc.category ? `<div style="margin-bottom:10px;"><span style="background:hsla(270, 70%, 60%, 0.15); color:hsl(270, 70%, 70%); padding:2px 8px; border-radius:10px; font-size:0.7rem; font-weight:500;">${escapeHTML(tc.category)}</span></div>` : ''}
+      ${tc.steps ? `<div style="font-size:0.78rem; color:hsl(215,20%,60%); margin-bottom:10px; white-space:pre-line; line-height:1.4; border-left:2px solid var(--border-color); padding-left:10px;">${escapeHTML(tc.steps)}</div>` : ''}
+      ${tc.expectedResult ? `<div style="font-size:0.78rem; color:hsl(142,70%,55%); margin-bottom:10px;"><strong>Expected:</strong> ${escapeHTML(tc.expectedResult)}</div>` : ''}
       <div style="display:flex; gap:6px; flex-wrap:wrap; border-top:1px solid var(--border-color); padding-top:10px;">
-        <button class="btn btn-secondary tc-btn-edit" data-id="${tc.id}" style="font-size:0.75rem; padding:4px 10px;">Edit</button>
-        <button class="btn btn-secondary tc-btn-delete" data-id="${tc.id}" style="font-size:0.75rem; padding:4px 10px; color:var(--color-critical);">Delete</button>
+        <button class="btn btn-secondary tc-btn-edit" data-id="${tc.id}" style="font-size:0.75rem; padding:4px 10px;">✏️ Edit</button>
+        <button class="btn btn-secondary tc-btn-delete" data-id="${tc.id}" style="font-size:0.75rem; padding:4px 10px; color:var(--color-critical);">🗑️ Delete</button>
         <div style="flex:1;"></div>
-        <button class="btn btn-secondary tc-btn-status" data-id="${tc.id}" data-status="pass" style="font-size:0.7rem; padding:3px 8px; color:hsl(142,70%,45%);">Pass</button>
-        <button class="btn btn-secondary tc-btn-status" data-id="${tc.id}" data-status="fail" style="font-size:0.7rem; padding:3px 8px; color:var(--color-critical);">Fail</button>
-        <button class="btn btn-secondary tc-btn-status" data-id="${tc.id}" data-status="blocked" style="font-size:0.7rem; padding:3px 8px; color:hsl(30,90%,55%);">Blocked</button>
-        <button class="btn btn-secondary tc-btn-status" data-id="${tc.id}" data-status="skipped" style="font-size:0.7rem; padding:3px 8px; color:hsl(220,15%,55%);">Skip</button>
+        <button class="btn btn-secondary tc-btn-status ${tc.status === 'pass' ? 'active' : ''}" data-id="${tc.id}" data-status="pass" style="font-size:0.7rem; padding:3px 8px; color:hsl(142,70%,45%);${tc.status === 'pass' ? 'background:hsla(142,70%,45%,0.2);' : ''}">✓ Pass</button>
+        <button class="btn btn-secondary tc-btn-status ${tc.status === 'fail' ? 'active' : ''}" data-id="${tc.id}" data-status="fail" style="font-size:0.7rem; padding:3px 8px; color:var(--color-critical);${tc.status === 'fail' ? 'background:hsla(0,84%,60%,0.2);' : ''}">✗ Fail</button>
+        <button class="btn btn-secondary tc-btn-status ${tc.status === 'blocked' ? 'active' : ''}" data-id="${tc.id}" data-status="blocked" style="font-size:0.7rem; padding:3px 8px; color:hsl(30,90%,55%);${tc.status === 'blocked' ? 'background:hsla(30,90%,55%,0.2);' : ''}">⊘ Blocked</button>
+        <button class="btn btn-secondary tc-btn-status ${tc.status === 'skipped' ? 'active' : ''}" data-id="${tc.id}" data-status="skipped" style="font-size:0.7rem; padding:3px 8px; color:hsl(220,15%,55%);${tc.status === 'skipped' ? 'background:hsla(220,15%,55%,0.2);' : ''}">⊖ Skip</button>
       </div>
     `;
 
@@ -2122,11 +2146,13 @@ function openTestCaseForm(existingCase = null) {
     if (el.tcFormCategory) el.tcFormCategory.value = '';
   }
 
+  el.testCaseFormModal.style.display = 'flex';
   el.testCaseFormModal.classList.add('active');
 }
 
 function closeTestCaseForm() {
   if (!el.testCaseFormModal) return;
+  el.testCaseFormModal.style.display = 'none';
   el.testCaseFormModal.classList.remove('active');
   editingTestCaseId = null;
   if (el.tcFormTitle) el.tcFormTitle.value = '';
@@ -2137,7 +2163,7 @@ function closeTestCaseForm() {
   if (el.tcFormCategory) el.tcFormCategory.value = '';
 }
 
-async function saveTestCase() {
+function saveTestCase() {
   const title = el.tcFormTitle ? el.tcFormTitle.value.trim() : '';
   if (!title) {
     alert('Please enter a test case title.');
@@ -2153,69 +2179,61 @@ async function saveTestCase() {
     category: el.tcFormCategory ? el.tcFormCategory.value.trim() : ''
   };
 
-  try {
-    if (editingTestCaseId) {
-      const response = await apiFetch('/api/test-cases', {
-        method: 'PUT',
-        body: JSON.stringify({ id: editingTestCaseId, ...tcData })
-      });
-      if (response.ok) {
-        logConsole(`Updated test case: "${title}"`, 'success');
-      }
+  if (editingTestCaseId) {
+    // Update existing test case
+    const idx = state.testCases.findIndex(tc => tc.id === editingTestCaseId);
+    if (idx !== -1) {
+      state.testCases[idx] = { ...state.testCases[idx], ...tcData, updatedAt: new Date().toISOString() };
+      logConsole(`[Test Cases] Updated test case: "${title}"`, 'success');
+    }
+  } else {
+    // Create new test case
+    const newTC = {
+      id: 'tc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      ...tcData
+    };
+    state.testCases.unshift(newTC);
+    logConsole(`[Test Cases] Created test case: "${title}"`, 'success');
+  }
+
+  saveTestCasesToStorage();
+  closeTestCaseForm();
+  renderTestCases();
+  updateTestCaseStats();
+
+  // Also try DB sync in background if logged in
+  trySyncTestCasesToDb();
+}
+
+function deleteTestCase(id) {
+  const tc = state.testCases.find(t => t.id === id);
+  state.testCases = state.testCases.filter(t => t.id !== id);
+  saveTestCasesToStorage();
+  renderTestCases();
+  updateTestCaseStats();
+  logConsole(`[Test Cases] Deleted test case: "${tc ? tc.title : id}"`, 'info');
+
+  // Also try DB sync
+  trySyncTestCasesToDb();
+}
+
+function updateTestCaseStatus(id, newStatus) {
+  const tc = state.testCases.find(t => t.id === id);
+  if (tc) {
+    // Toggle: if already this status, reset to pending
+    if (tc.status === newStatus) {
+      tc.status = 'pending';
+      tc.executedAt = null;
     } else {
-      const id = 'tc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-      const response = await apiFetch('/api/test-cases', {
-        method: 'POST',
-        body: JSON.stringify({
-          id,
-          projectId: state.projectId ? parseInt(state.projectId, 10) : null,
-          status: 'pending',
-          ...tcData
-        })
-      });
-      if (response.ok) {
-        logConsole(`Created test case: "${title}"`, 'success');
-      }
+      tc.status = newStatus;
+      tc.executedAt = new Date().toISOString();
     }
-    closeTestCaseForm();
-    await syncTestCasesFromDb();
-  } catch (err) {
-    logConsole(`Failed to save test case: ${err.message}`, 'error');
-  }
-}
-
-async function deleteTestCase(id) {
-  try {
-    const response = await apiFetch(`/api/test-cases?id=${id}`, {
-      method: 'DELETE'
-    });
-    if (response.ok) {
-      logConsole(`Deleted test case: ${id}`, 'info');
-      await syncTestCasesFromDb();
-    }
-  } catch (err) {
-    logConsole(`Failed to delete test case: ${err.message}`, 'error');
-  }
-}
-
-async function updateTestCaseStatus(id, newStatus) {
-  try {
-    const executedAt = new Date().toISOString();
-    const response = await apiFetch('/api/test-cases', {
-      method: 'PUT',
-      body: JSON.stringify({
-        id,
-        status: newStatus,
-        executedAt,
-        notes: ''
-      })
-    });
-    if (response.ok) {
-      logConsole(`Test case marked as ${newStatus}`, 'info');
-      await syncTestCasesFromDb();
-    }
-  } catch (err) {
-    logConsole(`Failed to update status: ${err.message}`, 'error');
+    saveTestCasesToStorage();
+    renderTestCases();
+    updateTestCaseStats();
+    logConsole(`[Test Cases] Test case "${tc.title}" marked as ${tc.status}`, 'info');
   }
 }
 
@@ -2231,59 +2249,66 @@ async function aiGenerateTestCases() {
     return;
   }
 
+  // Disable buttons while generating
+  const submitBtn = document.getElementById('btn-ai-generate-cases-submit');
   if (el.btnAiGenerateCases) {
     el.btnAiGenerateCases.setAttribute('disabled', 'true');
-    el.btnAiGenerateCases.textContent = 'Generating...';
+    el.btnAiGenerateCases.textContent = '⏳ Generating...';
+  }
+  if (submitBtn) {
+    submitBtn.setAttribute('disabled', 'true');
+    submitBtn.textContent = '⏳ Generating...';
   }
   showModuleLoading(el.testCaseListContainer);
 
   try {
-    const prompt = `Generate manual test cases for the following user story/feature. Return ONLY a JSON array where each object has: title, description, steps (numbered string), expectedResult, priority (critical/high/medium/low), category. User story: ${userStory}`;
+    const prompt = `Generate comprehensive manual test cases for the following user story/feature. Return ONLY a valid JSON array (no markdown, no explanation) where each object has these exact keys: "title" (string), "description" (string), "steps" (numbered string with newlines), "expectedResult" (string), "priority" (one of: "critical", "high", "medium", "low"), "category" (string). Generate at least 5 detailed test cases covering positive, negative, edge cases, and boundary conditions. User story: ${userStory}`;
     const responseText = await callGeminiAPI(prompt);
     const cleaned = cleanGeminiJson(responseText);
     const generated = JSON.parse(cleaned);
 
     if (Array.isArray(generated) && generated.length > 0) {
-      logConsole(`AI generated ${generated.length} test cases. Saving to DB...`, 'info');
-      
-      const savePromises = generated.map(item => {
-        const id = 'tc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-        return apiFetch('/api/test-cases', {
-          method: 'POST',
-          body: JSON.stringify({
-            id,
-            projectId: state.projectId ? parseInt(state.projectId, 10) : null,
-            title: item.title || 'Untitled Test Case',
-            description: item.description || '',
-            steps: item.steps || '',
-            expectedResult: item.expectedResult || '',
-            priority: item.priority || 'medium',
-            category: item.category || '',
-            status: 'pending'
-          })
-        });
+      generated.forEach(item => {
+        const newTC = {
+          id: 'tc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          title: item.title || 'Untitled Test Case',
+          description: item.description || '',
+          steps: item.steps || '',
+          expectedResult: item.expectedResult || '',
+          priority: item.priority || 'medium',
+          category: item.category || '',
+          status: 'pending',
+          createdAt: new Date().toISOString()
+        };
+        state.testCases.unshift(newTC);
       });
-      
-      await Promise.all(savePromises);
-      logConsole(`Successfully saved ${generated.length} test cases to cloud DB.`, 'success');
-      await syncTestCasesFromDb();
+
+      saveTestCasesToStorage();
+      renderTestCases();
+      updateTestCaseStats();
+      logConsole(`[Test Cases] AI generated ${generated.length} test cases successfully!`, 'success');
     } else {
-      logConsole('AI returned no test cases. Try a more detailed user story.', 'warn');
+      logConsole('[Test Cases] AI returned no test cases. Try a more detailed user story.', 'warn');
     }
   } catch (err) {
-    logConsole(`AI test case generation failed: ${err.message}`, 'error');
+    logConsole(`[Test Cases] AI test case generation failed: ${err.message}`, 'error');
+    alert(`AI generation failed: ${err.message}`);
   } finally {
     hideModuleLoading(el.testCaseListContainer);
     if (el.btnAiGenerateCases) {
       el.btnAiGenerateCases.removeAttribute('disabled');
       el.btnAiGenerateCases.textContent = 'AI Generate';
     }
+    if (submitBtn) {
+      submitBtn.removeAttribute('disabled');
+      submitBtn.textContent = 'Generate Test Cases with AI';
+    }
   }
 }
 
 function exportTestCasesCSV() {
   if (state.testCases.length === 0) {
-    alert('No test cases to export.');
+    alert('No test cases to export. Create or generate test cases first.');
     return;
   }
 
@@ -2307,23 +2332,46 @@ function exportTestCasesCSV() {
   });
 
   downloadFile('aegis_test_cases.csv', csvRows.join('\n'), 'text/csv');
+  logConsole(`[Test Cases] Exported ${state.testCases.length} test cases as CSV`, 'success');
 }
 
 function exportTestCasesJSON() {
   if (state.testCases.length === 0) {
-    alert('No test cases to export.');
+    alert('No test cases to export. Create or generate test cases first.');
     return;
   }
   downloadFile('aegis_test_cases.json', JSON.stringify(state.testCases, null, 2), 'application/json');
+  logConsole(`[Test Cases] Exported ${state.testCases.length} test cases as JSON`, 'success');
+}
+
+// Optional background DB sync (best effort, doesn't block UI)
+async function trySyncTestCasesToDb() {
+  if (!state.token) return;
+  try {
+    await apiFetch('/api/test-cases', {
+      method: 'POST',
+      body: JSON.stringify({ bulk: state.testCases })
+    });
+  } catch (e) {
+    // Silently ignore – localStorage is the source of truth
+  }
 }
 
 function initTestCaseManager() {
+  // Load test cases from localStorage on init
+  loadTestCasesFromStorage();
+
   // Wire up event listeners (with null checks)
   if (el.btnCreateTestCase) {
     el.btnCreateTestCase.addEventListener('click', () => openTestCaseForm(null));
   }
   if (el.btnAiGenerateCases) {
     el.btnAiGenerateCases.addEventListener('click', aiGenerateTestCases);
+  }
+  // Wire the "Generate Test Cases with AI" submit button inside the AI panel
+  const btnAiSubmit = document.getElementById('btn-ai-generate-cases-submit');
+  if (btnAiSubmit) {
+    btnAiSubmit.addEventListener('click', aiGenerateTestCases);
   }
   if (el.btnTcFormSave) {
     el.btnTcFormSave.addEventListener('click', saveTestCase);
