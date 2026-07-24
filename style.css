@@ -2393,20 +2393,36 @@ body {
 }
 
 /* OWASP & CWE Badges */
-.owasp-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: hsla(263, 90%, 65%, 0.15);
-  color: hsl(263, 90%, 75%);
-  border: 1px solid hsla(263, 90%, 65%, 0.3);
-  padding: 2px 8px;
+/* Framework Preset Buttons */
+.framework-preset-btn {
+  background: transparent;
+  border: none;
+  color: hsl(215, 20%, 65%);
+  padding: 4px 10px;
   border-radius: 6px;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  font-family: var(--font-mono);
-  box-shadow: inset 0 1px 1px rgba(255,255,255,0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
+
+.framework-preset-btn:hover {
+  color: white;
+}
+
+.framework-preset-btn.active {
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 2px 8px rgba(37, 99, 235, 0.4);
+}
+
+.test-sim-pass-line {
+  color: #86efac;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 
 
 
