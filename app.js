@@ -1763,18 +1763,18 @@ function runWebTesterSimulation() {
   el.webTesterWorkspace.style.display = 'grid';
   
   // Set mock inputs
-  el.webTargetUrl.value = 'https://acme-shop.demo';
-  el.webGoalInput.value = 'Verify shopping cart login flow and identify any javascript console exceptions.';
+  if (el.webTargetUrlInput) el.webTargetUrlInput.value = 'https://acme-shop.demo';
+  if (el.webTestGoalInput) el.webTestGoalInput.value = 'Verify shopping cart login flow and identify any javascript console exceptions.';
   
   // Initialize panels
-  el.webAgentConsole.innerHTML = '<div class="console-line info">[System] Initializing virtual headless browser container...</div>';
+  el.webPageConsole.innerHTML = '<div class="console-line info">[System] Initializing virtual headless browser container...</div>';
   el.webAgentBugsList.innerHTML = `
     <div class="empty-state">
       <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; margin-bottom: 8px;"><path d="M18 10a6 6 0 0 0-12 0c0 7 3 9 3 9h6s3-2 3-9"/><path d="M6 10H4M20 10h-2M12 4V2M9 19c0 1.5 1.5 3 3 3s3-1.5 3-3"/></svg>
       <p style="font-size: 0.8rem;">No bugs detected yet.</p>
     </div>
   `;
-  el.webTimeline.innerHTML = '';
+  el.webAgentTimeline.innerHTML = '';
   
   const simulationSteps = [
     {
@@ -1855,14 +1855,14 @@ function runWebTesterSimulation() {
     const consoleLine = document.createElement('div');
     consoleLine.className = `console-line ${step.type}`;
     consoleLine.textContent = step.log;
-    el.webAgentConsole.appendChild(consoleLine);
-    el.webAgentConsole.scrollTop = el.webAgentConsole.scrollHeight;
+    el.webPageConsole.appendChild(consoleLine);
+    el.webPageConsole.scrollTop = el.webPageConsole.scrollHeight;
 
     // Append to timeline
     logWebTimeline(step.timeline, step.type);
 
     // Update screenshot mockup
-    el.webAgentScreenshot.src = step.img;
+    el.browserScreenshot.src = step.img;
 
     // Log bug if present
     if (step.bug) {
