@@ -1301,8 +1301,16 @@ async function checkBrowserConnection() {
           <br>
           2. Launch Microsoft Edge in debug mode using <code>./start_edge.ps1</code>.
         </p>
+        <div style="margin-top: 16px; display: flex; gap: 12px;">
+          <button class="btn btn-primary" id="btn-run-simulated-web" style="font-size: 0.85rem; padding: 6px 14px;">⚡ Run Simulated E2E Audit</button>
+        </div>
       `;
       el.webDisconnectedAlert.style.display = 'block';
+      
+      const btnSim = document.getElementById('btn-run-simulated-web');
+      if (btnSim) {
+        btnSim.addEventListener('click', runWebTesterSimulation);
+      }
     }
     if (el.webTesterWorkspace) el.webTesterWorkspace.style.display = 'none';
     return;
@@ -1737,7 +1745,7 @@ function appendWebBugItem(bug, base64Img) {
     <div class="bug-card-body">
       <div class="bug-description" style="margin-bottom: 12px;">${bug.description}</div>
       <div style="border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; width: 100%; max-height: 180px; background-color: #000;">
-        <img src="data:image/jpeg;base64,${base64Img}" style="width: 100%; height: 100%; object-fit: contain;" alt="Bug Context Screenshot">
+        <img src="${base64Img.startsWith('http') ? base64Img : 'data:image/jpeg;base64,' + base64Img}" style="width: 100%; height: 100%; object-fit: contain;" alt="Bug Context Screenshot">
       </div>
     </div>
   `;
@@ -1748,6 +1756,127 @@ function appendWebBugItem(bug, base64Img) {
   
   el.webAgentBugsList.appendChild(card);
 }
+
+// Run simulated Web Tester E2E run (Interactive demo for hosted mode)
+function runWebTesterSimulation() {
+  el.webDisconnectedAlert.style.display = 'none';
+  el.webTesterWorkspace.style.display = 'grid';
+  
+  // Set mock inputs
+  el.webTargetUrl.value = 'https://acme-shop.demo';
+  el.webGoalInput.value = 'Verify shopping cart login flow and identify any javascript console exceptions.';
+  
+  // Initialize panels
+  el.webAgentConsole.innerHTML = '<div class="console-line info">[System] Initializing virtual headless browser container...</div>';
+  el.webAgentBugsList.innerHTML = `
+    <div class="empty-state">
+      <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; margin-bottom: 8px;"><path d="M18 10a6 6 0 0 0-12 0c0 7 3 9 3 9h6s3-2 3-9"/><path d="M6 10H4M20 10h-2M12 4V2M9 19c0 1.5 1.5 3 3 3s3-1.5 3-3"/></svg>
+      <p style="font-size: 0.8rem;">No bugs detected yet.</p>
+    </div>
+  `;
+  el.webTimeline.innerHTML = '';
+  
+  const simulationSteps = [
+    {
+      log: '🌐 [Agent] Navigating browser tab to https://acme-shop.demo...',
+      type: 'info',
+      img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=60',
+      timeline: 'Navigated to https://acme-shop.demo',
+      delay: 1500
+    },
+    {
+      log: '🔍 [Agent] Scan finished. Identified 14 interactive components, 3 textareas, and 6 active buttons.',
+      type: 'info',
+      img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=60',
+      timeline: 'Scanned DOM elements',
+      delay: 1500
+    },
+    {
+      log: '🖱️ [Agent] Clicking button: "Log In" (Selector: button.btn-login)',
+      type: 'info',
+      img: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=600&auto=format&fit=crop&q=60',
+      timeline: 'Clicked "Log In" button',
+      delay: 1800
+    },
+    {
+      log: '📝 [Agent] Entering credentials... Email: test@demo.com, Password: •••••••••••',
+      type: 'info',
+      img: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=600&auto=format&fit=crop&q=60',
+      timeline: 'Filled login credentials form',
+      delay: 1500
+    },
+    {
+      log: '🖱️ [Agent] Clicking button: "Sign In" (Selector: button[type="submit"])',
+      type: 'info',
+      img: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=600&auto=format&fit=crop&q=60',
+      timeline: 'Submitted sign-in credentials',
+      delay: 1800
+    },
+    {
+      log: '🛑 [Browser] Uncaught TypeError: Cannot read property \'token\' of undefined at dashboard.js:84',
+      type: 'error',
+      img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=60',
+      timeline: 'Unhandled runtime crash',
+      delay: 1500
+    },
+    {
+      log: '🐞 [Agent] Vulnerability Identified: Uncaught login flow crash (Critical). Writing report...',
+      type: 'success',
+      img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=60',
+      timeline: 'Logged crash vulnerability',
+      bug: {
+        title: 'TypeError: Cannot read property \'token\' of undefined',
+        description: 'Authenticating with correct credentials crashes the web page because the response JSON does not contain the root token object, throwing a script exception.',
+        severity: 'critical'
+      },
+      delay: 2000
+    },
+    {
+      log: '🏁 [Agent] Simulation run finished. 1 critical bug identified and logged.',
+      type: 'success',
+      img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=60',
+      timeline: 'Visual audit finished',
+      delay: 1000
+    }
+  ];
+
+  let stepIdx = 0;
+  state.webBugs = [];
+
+  function executeStep() {
+    if (stepIdx >= simulationSteps.length) {
+      logConsole('[Simulation]', 'Virtual E2E audit completed successfully.', 'success');
+      return;
+    }
+
+    const step = simulationSteps[stepIdx];
+
+    // Append to console
+    const consoleLine = document.createElement('div');
+    consoleLine.className = `console-line ${step.type}`;
+    consoleLine.textContent = step.log;
+    el.webAgentConsole.appendChild(consoleLine);
+    el.webAgentConsole.scrollTop = el.webAgentConsole.scrollHeight;
+
+    // Append to timeline
+    logWebTimeline(step.timeline, step.type);
+
+    // Update screenshot mockup
+    el.webAgentScreenshot.src = step.img;
+
+    // Log bug if present
+    if (step.bug) {
+      state.webBugs.push(step.bug);
+      appendWebBugItem(step.bug, step.img);
+    }
+
+    stepIdx++;
+    setTimeout(executeStep, step.delay);
+  }
+
+  executeStep();
+}
+
 
 // Click marker UI drawer
 function drawClickMarker(x, y) {
@@ -2631,14 +2760,22 @@ async function runAccessibilityAudit() {
   }
 
   if (!html && urlInput) {
-    // Attempt to fetch HTML from URL
+    // Attempt to fetch HTML from URL via serverless CORS proxy
     try {
-      const res = await fetch(urlInput);
+      const proxyUrl = `/api/proxy-html?url=${encodeURIComponent(urlInput)}`;
+      const res = await fetch(proxyUrl);
+      if (!res.ok) throw new Error(`HTTP status ${res.status}`);
       html = await res.text();
     } catch (err) {
-      alert(`Could not fetch HTML from URL: ${err.message}. This may be due to CORS restrictions. Try pasting the HTML directly.`);
-      logConsole(`Failed to fetch URL for accessibility audit: ${err.message}`, 'error');
-      return;
+      // Fallback to direct client-side fetch if proxy fails
+      try {
+        const res = await fetch(urlInput);
+        html = await res.text();
+      } catch (directErr) {
+        alert(`Could not fetch HTML from URL: ${err.message}. This may be due to CORS restrictions. Try pasting the HTML directly.`);
+        logConsole(`Failed to fetch URL for accessibility audit: ${err.message}`, 'error');
+        return;
+      }
     }
   }
 
@@ -2778,14 +2915,23 @@ async function runPerformanceAudit() {
   let input = '';
   if (urlInput) {
     input = `URL: ${urlInput}`;
-    // Attempt to fetch HTML for deeper analysis
+    // Attempt to fetch HTML for deeper analysis via serverless CORS proxy
     try {
-      const res = await fetch(urlInput);
+      const proxyUrl = `/api/proxy-html?url=${encodeURIComponent(urlInput)}`;
+      const res = await fetch(proxyUrl);
+      if (!res.ok) throw new Error(`HTTP status ${res.status}`);
       const fetchedHtml = await res.text();
       input += `\n\nFetched HTML (first 12000 chars):\n${fetchedHtml.substring(0, 12000)}`;
     } catch (err) {
-      input += `\n\n(Could not fetch URL due to CORS/network restrictions. Analyzing based on URL only.)`;
-      logConsole(`Could not fetch URL for performance audit: ${err.message}`, 'warn');
+      // Fallback to direct client-side fetch
+      try {
+        const res = await fetch(urlInput);
+        const fetchedHtml = await res.text();
+        input += `\n\nFetched HTML (first 12000 chars):\n${fetchedHtml.substring(0, 12000)}`;
+      } catch (directErr) {
+        input += `\n\n(Could not fetch URL due to CORS/network restrictions. Analyzing based on URL only.)`;
+        logConsole(`Could not fetch URL for performance audit: ${err.message}`, 'warn');
+      }
     }
   } else if (htmlInput) {
     input = htmlInput.length > 15000 ? htmlInput.substring(0, 15000) : htmlInput;
@@ -3166,6 +3312,14 @@ function startup() {
   initProjectSharing();
   initBugsExporter();
   initGuidedTour();
+
+  const btnLoadSandbox = document.getElementById('btn-load-sandbox');
+  if (btnLoadSandbox) {
+    btnLoadSandbox.addEventListener('click', () => {
+      loadSandboxDemoData();
+      logConsole('[Dashboard]', 'Sandbox demo loaded successfully.', 'success');
+    });
+  }
 
   if (state.projectId) {
     loadCollaborators();

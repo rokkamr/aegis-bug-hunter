@@ -34,6 +34,10 @@
       "dest": "/api/test-db-connection.js"
     },
     {
+      "src": "/api/proxy-html",
+      "dest": "/api/proxy-html.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/$1"
     }
