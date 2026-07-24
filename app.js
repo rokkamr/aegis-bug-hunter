@@ -1286,6 +1286,9 @@ el.chatUserInput.addEventListener('keydown', (e) => {
 
 // Check if Edge debugging port 9222 is alive
 async function checkBrowserConnection() {
+  // Don't reset the UI if a simulation is actively running
+  if (state.isSimulationRunning) return;
+
   if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
     state.isBrowserConnected = false;
     if (el.browserStatusDot) el.browserStatusDot.className = 'status-dot';
@@ -1759,6 +1762,7 @@ function appendWebBugItem(bug, base64Img) {
 
 // Run simulated Web Tester E2E run (Interactive demo for hosted mode)
 function runWebTesterSimulation() {
+  state.isSimulationRunning = true;
   el.webDisconnectedAlert.style.display = 'none';
   el.webTesterWorkspace.style.display = 'grid';
   
@@ -1845,6 +1849,7 @@ function runWebTesterSimulation() {
 
   function executeStep() {
     if (stepIdx >= simulationSteps.length) {
+      state.isSimulationRunning = false;
       logConsole('[Simulation]', 'Virtual E2E audit completed successfully.', 'success');
       return;
     }
