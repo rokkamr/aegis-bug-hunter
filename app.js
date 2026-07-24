@@ -102,6 +102,11 @@ const el = {
   bugFilesList: document.getElementById('bug-files-list'),
   bugDetailsList: document.getElementById('bug-details-list'),
   bugStatsBadge: document.getElementById('bug-stats-badge'),
+  btnLoadDemoBugHunter: document.getElementById('btn-load-demo-bug-hunter'),
+  btnDemoScanEmpty: document.getElementById('btn-demo-scan-empty'),
+  btnAutofixAll: document.getElementById('btn-autofix-all'),
+  bugSearchInput: document.getElementById('bug-search-input'),
+  scannedFilesCount: document.getElementById('scanned-files-count'),
   
   // Test Writer
   testFilesList: document.getElementById('test-files-list'),
@@ -760,38 +765,224 @@ el.btnCancelScan.addEventListener('click', () => {
   logConsole("Cancelling scan request...", "warn");
 });
 
+// OWASP / CWE Tag Mapping Helper
+function getOwaspTag(bugType) {
+  const t = (bugType || '').toLowerCase();
+  if (t.includes('credential') || t.includes('password') || t.includes('secret') || t.includes('key') || t.includes('token')) {
+    return 'CWE-798: Hardcoded Secret';
+  }
+  if (t.includes('sql') || t.includes('injection') || t.includes('query')) {
+    return 'OWASP A03: Injection';
+  }
+  if (t.includes('xss') || t.includes('script') || t.includes('html')) {
+    return 'OWASP A03: Cross-Site Scripting';
+  }
+  if (t.includes('auth') || t.includes('session') || t.includes('jwt')) {
+    return 'OWASP A07: Auth Failure';
+  }
+  if (t.includes('uncaught') || t.includes('exception') || t.includes('crash') || t.includes('null')) {
+    return 'CWE-248: Unhandled Exception';
+  }
+  return 'OWASP A04: Insecure Design';
+}
+
+// Active Bug Hunter Severity Filter
+let activeBugSeverity = 'all';
+
+// Load Demo Repository & Run Scan (Instant 1-Click Interactive Demo)
+function loadDemoRepoAndScan() {
+  logConsole("[Bug Hunter]", "Loading microservice demo repository...", "info");
+
+  state.projectName = 'Microservice Auth & Payment API (Demo)';
+  if (el.activeProjectName) el.activeProjectName.textContent = state.projectName;
+  if (el.workspaceBadge) el.workspaceBadge.style.display = 'flex';
+
+  state.files = {
+    'src/auth/jwt-service.js': {
+      relativePath: 'src/auth/jwt-service.js',
+      content: `const jwt = require('jsonwebtoken');\nconst SECRET_KEY = "SUPER_SECRET_ADMIN_KEY_12345"; // HARDCODED SECRET\n\nfunction verifyToken(req, res, next) {\n  const token = req.headers['authorization'];\n  if (!token) return res.status(401).send("Unauthorized");\n  try {\n    const decoded = jwt.verify(token, SECRET_KEY);\n    req.user = decoded;\n    next();\n  } catch (err) {\n    return res.status(403).send("Invalid token");\n  }\n}`
+    },
+    'src/db/user-repository.js': {
+      relativePath: 'src/db/user-repository.js',
+      content: `const db = require('./connection');\n\nasync function findUserByUsername(username) {\n  // Vulnerable to SQL Injection\n  const query = "SELECT * FROM users WHERE username = '" + username + "'";\n  return await db.query(query);\n}`
+    },
+    'src/api/payment-controller.js': {
+      relativePath: 'src/api/payment-controller.js',
+      content: `async function processPayment(req, res) {\n  const { amount, cardToken } = req.body;\n  // Missing input validation and uncaught error crash\n  const result = await paymentGateway.charge(cardToken, amount);\n  res.json({ success: true, transactionId: result.id });\n}`
+    },
+    'src/config/env-check.js': {
+      relativePath: 'src/config/env-check.js',
+      content: `function checkEnv() {\n  console.log("Environment loaded");\n}`
+    }
+  };
+
+  renderFileTree();
+
+  state.bugs = [
+    {
+      id: 101,
+      file: 'src/auth/jwt-service.js',
+      line: 2,
+      bug: 'Hardcoded JWT Secret Key',
+      severity: 'critical',
+      description: 'Hardcoded secret key "SUPER_SECRET_ADMIN_KEY_12345" exposed directly in code. Attackers can forge valid admin JWT tokens.',
+      originalCode: `const SECRET_KEY = "SUPER_SECRET_ADMIN_KEY_12345"; // HARDCODED SECRET`,
+      fixedCode: `const SECRET_KEY = process.env.JWT_SECRET_KEY;`
+    },
+    {
+      id: 102,
+      file: 'src/db/user-repository.js',
+      line: 5,
+      bug: 'SQL Injection Vulnerability',
+      severity: 'critical',
+      description: 'Raw string concatenation in SQL query allows malicious input to alter database query logic or drop tables.',
+      originalCode: `const query = "SELECT * FROM users WHERE username = '" + username + "'";`,
+      fixedCode: `const query = "SELECT * FROM users WHERE username = $1";\n  return await db.query(query, [username]);`
+    },
+    {
+      id: 103,
+      file: 'src/api/payment-controller.js',
+      line: 3,
+      bug: 'Uncaught Async Rejection & Missing Input Validation',
+      severity: 'warning',
+      description: 'Payment gateway failures are not wrapped in a try/catch block, causing unhandled promise rejections that crash the API server.',
+      originalCode: `const result = await paymentGateway.charge(cardToken, amount);\n  res.json({ success: true, transactionId: result.id });`,
+      fixedCode: `try {\n    if (!amount || amount <= 0) return res.status(400).json({ error: "Invalid amount" });\n    const result = await paymentGateway.charge(cardToken, amount);\n    res.json({ success: true, transactionId: result.id });\n  } catch (err) {\n    res.status(500).json({ error: "Payment processing failed" });\n  }`
+    }
+  ];
+
+  renderBugHunterView();
+  logConsole("[Bug Hunter]", `Demo Repo scanned! Identified ${state.bugs.length} vulnerabilities across ${Object.keys(state.files).length} files.`, "success");
+}
+
+// Batch Auto-Fix All Bugs
+async function autoFixAllBugs() {
+  if (state.bugs.length === 0) return;
+  if (!confirm(`Apply AI auto-fixes for all ${state.bugs.length} vulnerabilities?`)) return;
+
+  const btn = el.btnAutofixAll;
+  if (btn) {
+    btn.setAttribute('disabled', 'true');
+    btn.textContent = '⏳ Auto-Fixing...';
+  }
+
+  const bugsToFix = [...state.bugs];
+  let fixedCount = 0;
+
+  for (const bug of bugsToFix) {
+    try {
+      if (state.files[bug.file] && bug.fixedCode) {
+        state.files[bug.file].content = state.files[bug.file].content.replace(bug.originalCode, bug.fixedCode);
+        state.bugs = state.bugs.filter(b => b.id !== bug.id);
+        fixedCount++;
+        logConsole("[Auto-Fix]", `Fixed ${bug.bug} in ${bug.file}`, "success");
+      }
+    } catch (err) {
+      console.error(`Failed to auto-fix bug ${bug.id}:`, err);
+    }
+  }
+
+  if (btn) {
+    btn.removeAttribute('disabled');
+    btn.textContent = '⚡ Auto-Fix All Bugs';
+  }
+
+  renderBugHunterView();
+  alert(`Successfully applied AI auto-fixes to ${fixedCount} vulnerabilities!`);
+}
+
+// Open Bug in Code Chat Q&A
+function discussBugInChat(bugId) {
+  const bug = state.bugs.find(b => b.id === bugId);
+  if (!bug) return;
+
+  switchView('code-chat');
+  if (el.chatUserInput) {
+    el.chatUserInput.value = `Can you explain why "${bug.bug}" in line ${bug.line} of ${bug.file} is dangerous and how to properly fix it? Description: ${bug.description}`;
+    el.chatUserInput.focus();
+  }
+}
+
+// Filter Bugs by Severity & Keyword
+function filterBugsList() {
+  const keyword = el.bugSearchInput ? el.bugSearchInput.value.trim().toLowerCase() : '';
+  
+  return state.bugs.filter(b => {
+    const matchesSev = activeBugSeverity === 'all' || b.severity === activeBugSeverity;
+    const matchesKw = !keyword || 
+      b.bug.toLowerCase().includes(keyword) || 
+      b.file.toLowerCase().includes(keyword) || 
+      b.description.toLowerCase().includes(keyword);
+    return matchesSev && matchesKw;
+  });
+}
+
 // Render Bug Hunter Panels
 function renderBugHunterView() {
+  if (!el.bugFilesList || !el.bugDetailsList) return;
   el.bugFilesList.innerHTML = '';
   el.bugDetailsList.innerHTML = '';
+  
+  const filteredBugs = filterBugsList();
   el.bugStatsBadge.textContent = `${state.bugs.length} Issues Found`;
   
+  if (el.scannedFilesCount) {
+    const fileCount = Object.keys(state.files).length;
+    el.scannedFilesCount.textContent = `${fileCount} ${fileCount === 1 ? 'file' : 'files'}`;
+  }
+
+  // Toggle Action Buttons
+  if (el.btnAutofixAll) el.btnAutofixAll.style.display = state.bugs.length > 0 ? 'inline-flex' : 'none';
+  if (el.btnExportBugReport) el.btnExportBugReport.style.display = state.bugs.length > 0 ? 'inline-flex' : 'none';
+
   if (state.bugs.length === 0) {
     el.bugFilesList.innerHTML = `
       <div class="empty-state" style="padding:30px 10px;">
-        <p style="font-size:0.85rem;">No bugs found yet. Run a project scan first.</p>
+        <p style="font-size:0.85rem;">No bugs found yet.</p>
       </div>
     `;
     el.bugDetailsList.innerHTML = `
-      <div class="empty-state">
-        <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-        <p style="font-size: 0.9rem;">Run a code scan to detect bugs, code smells, and vulnerabilities in your project files.</p>
+      <div class="glass-panel" style="text-align: center; padding: 48px 24px;">
+        <div style="width: 64px; height: 64px; background: hsla(142, 71%, 45%, 0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; border: 1px solid hsla(142, 71%, 45%, 0.3);">
+          <svg viewBox="0 0 24 24" style="width: 32px; height: 32px; stroke: var(--color-success); fill: none; stroke-width: 2;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 8px;">Codebase is Clean &amp; Secure!</h3>
+        <p style="font-size: 0.9rem; color: hsl(215, 20%, 65%); max-width: 480px; margin: 0 auto 24px; line-height: 1.5;">
+          No vulnerabilities or code smells detected. Click below to run a sample demo scan or select a local repository folder.
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button class="btn btn-primary" id="btn-demo-scan-empty" style="font-size: 0.9rem;">
+            ⚡ Load Demo Repo &amp; Run AI Scan
+          </button>
+        </div>
+      </div>
+    `;
+
+    const btnEmptyDemo = document.getElementById('btn-demo-scan-empty');
+    if (btnEmptyDemo) btnEmptyDemo.addEventListener('click', loadDemoRepoAndScan);
+    return;
+  }
+
+  const buggedFiles = [...new Set(filteredBugs.map(b => b.file))];
+  
+  if (buggedFiles.length === 0) {
+    el.bugDetailsList.innerHTML = `
+      <div class="empty-state" style="padding: 40px 20px;">
+        <p style="font-size: 0.9rem;">No vulnerabilities match your filter criteria.</p>
       </div>
     `;
     return;
   }
 
-  const buggedFiles = [...new Set(state.bugs.map(b => b.file))];
-  
   buggedFiles.forEach(filePath => {
-    const fileBugs = state.bugs.filter(b => b.file === filePath);
+    const fileBugs = filteredBugs.filter(b => b.file === filePath);
     
     const item = document.createElement('div');
     item.className = 'tree-row file';
     item.innerHTML = `
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      <span style="flex-grow:1; word-break: break-all;">${filePath.split('/').pop()}</span>
-      <span class="bug-badge critical" style="padding: 1px 6px; font-size: 0.7rem; border-radius: 10px;">${fileBugs.length}</span>
+      <span style="flex-grow:1; word-break: break-all; font-weight: 500;">${filePath.split('/').pop()}</span>
+      <span class="bug-badge critical" style="padding: 1px 7px; font-size: 0.7rem; border-radius: 10px; font-weight: 700;">${fileBugs.length}</span>
     `;
     
     item.addEventListener('click', () => {
@@ -803,7 +994,7 @@ function renderBugHunterView() {
     el.bugFilesList.appendChild(item);
   });
   
-  if (buggedFiles.length > 0) {
+  if (buggedFiles.length > 0 && el.bugFilesList.firstChild) {
     el.bugFilesList.firstChild.click();
   }
 }
@@ -811,48 +1002,54 @@ function renderBugHunterView() {
 // Render Bug Detail Cards for a selected file
 function renderBugsForFile(filePath) {
   el.bugDetailsList.innerHTML = '';
-  const fileBugs = state.bugs.filter(b => b.file === filePath);
+  const filtered = filterBugsList();
+  const fileBugs = filtered.filter(b => b.file === filePath);
   
-  fileBugs.forEach(bug => {
+  fileBugs.forEach((bug, idx) => {
     const card = document.createElement('div');
-    card.className = 'bug-card';
+    card.className = `bug-card ${idx === 0 ? 'expanded' : ''}`;
     card.id = `card_${bug.id}`;
+    const owaspTag = getOwaspTag(bug.bug);
     
     card.innerHTML = `
       <div class="bug-card-header">
-        <div class="bug-card-title-group">
-          <span class="bug-badge ${bug.severity}">${bug.severity}</span>
+        <div class="bug-card-title-group" style="gap: 12px; align-items: center;">
+          <span class="bug-badge ${bug.severity}" style="text-transform: uppercase; font-size: 0.72rem; padding: 3px 8px; border-radius: 8px;">${bug.severity}</span>
           <div>
-            <div class="bug-title">${bug.bug}</div>
-            <div class="bug-file-path">Line ${bug.line} in ${bug.file.split('/').pop()}</div>
+            <div class="bug-title" style="font-weight: 600; font-size: 0.98rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span>${escapeHTML(bug.bug)}</span>
+              <span class="owasp-badge">${owaspTag}</span>
+            </div>
+            <div class="bug-file-path" style="font-size: 0.78rem; color: hsl(215, 20%, 60%); margin-top: 2px;">Line ${bug.line} in <code>${escapeHTML(bug.file)}</code></div>
           </div>
         </div>
         <svg class="bug-chevron" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div class="bug-card-body">
-        <div class="bug-description">${bug.description}</div>
+        <div class="bug-description" style="font-size: 0.88rem; line-height: 1.5; color: hsl(215, 20%, 80%); margin-bottom: 16px;">${escapeHTML(bug.description)}</div>
         
         ${bug.originalCode && bug.fixedCode ? `
-        <div class="diff-container">
-          <div class="diff-header">
-            <span>Proposed Fix</span>
-            <span style="font-size: 0.75rem;">Line ${bug.line}</span>
+        <div class="diff-container" style="border-radius: 12px; overflow: hidden; margin-bottom: 16px;">
+          <div class="diff-header" style="padding: 8px 14px; font-weight: 600; font-size: 0.8rem; display: flex; justify-content: space-between;">
+            <span>AI Suggested Line Fix</span>
+            <span style="font-size: 0.75rem; color: hsl(215, 20%, 60%);">Line ${bug.line}</span>
           </div>
-          <div class="diff-body">
-            <div class="diff-line deletion">
-              <span class="diff-prefix">-</span>
+          <div class="diff-body" style="font-family: var(--font-mono); font-size: 0.82rem; padding: 8px 0;">
+            <div class="diff-line deletion" style="padding: 4px 14px; background: hsla(0, 84%, 60%, 0.1); border-left: 3px solid var(--color-critical); color: #fca5a5;">
+              <span class="diff-prefix" style="margin-right: 8px; font-weight: 700;">-</span>
               <span class="diff-content">${escapeHTML(bug.originalCode)}</span>
             </div>
-            <div class="diff-line addition">
-              <span class="diff-prefix">+</span>
+            <div class="diff-line addition" style="padding: 4px 14px; background: hsla(142, 70%, 45%, 0.1); border-left: 3px solid var(--color-success); color: #86efac;">
+              <span class="diff-prefix" style="margin-right: 8px; font-weight: 700;">+</span>
               <span class="diff-content">${escapeHTML(bug.fixedCode)}</span>
             </div>
           </div>
         </div>
         
-        <div class="diff-actions">
-          <button class="btn btn-primary btn-apply-fix" data-id="${bug.id}">Apply Fix</button>
-          <button class="btn btn-secondary btn-copy-fix" data-id="${bug.id}">Copy Code</button>
+        <div class="diff-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <button class="btn btn-primary btn-apply-fix" data-id="${bug.id}" style="font-size: 0.8rem; padding: 6px 14px;">⚡ Apply Fix</button>
+          <button class="btn btn-secondary btn-copy-fix" data-id="${bug.id}" style="font-size: 0.8rem; padding: 6px 14px;">📋 Copy Code</button>
+          <button class="btn btn-secondary btn-discuss-chat" data-id="${bug.id}" style="font-size: 0.8rem; padding: 6px 14px; color: var(--color-accent);">💬 Discuss in Chat</button>
         </div>
         ` : ''}
       </div>
@@ -867,9 +1064,17 @@ function renderBugsForFile(filePath) {
         e.stopPropagation();
         navigator.clipboard.writeText(bug.fixedCode);
         logConsole(`Copied suggested fix for: "${bug.bug}"`, 'info');
-        alert("Code copied to clipboard!");
+        alert("Code snippet copied to clipboard!");
       });
       
+      const btnDiscuss = card.querySelector('.btn-discuss-chat');
+      if (btnDiscuss) {
+        btnDiscuss.addEventListener('click', (e) => {
+          e.stopPropagation();
+          discussBugInChat(bug.id);
+        });
+      }
+
       card.querySelector('.btn-apply-fix').addEventListener('click', async (e) => {
         e.stopPropagation();
         const btn = e.target;
@@ -877,25 +1082,22 @@ function renderBugsForFile(filePath) {
         btn.textContent = "Applying...";
         
         try {
-          const success = await applyBugFix(bug);
-          if (success) {
-            btn.textContent = "Applied!";
-            btn.style.backgroundColor = "var(--color-success)";
-            logConsole(`Bug fix applied to file: ${bug.file} at line ${bug.line}`, 'success');
-            
-            state.bugs = state.bugs.filter(b => b.id !== bug.id);
-            
-            setTimeout(() => {
-              renderBugHunterView();
-            }, 1000);
-          } else {
-            btn.removeAttribute('disabled');
-            btn.textContent = "Apply Fix";
+          if (state.files[bug.file]) {
+            state.files[bug.file].content = state.files[bug.file].content.replace(bug.originalCode, bug.fixedCode);
           }
+          btn.textContent = "Applied!";
+          btn.style.backgroundColor = "var(--color-success)";
+          logConsole(`Bug fix applied to file: ${bug.file} at line ${bug.line}`, 'success');
+          
+          state.bugs = state.bugs.filter(b => b.id !== bug.id);
+          
+          setTimeout(() => {
+            renderBugHunterView();
+          }, 800);
         } catch (err) {
           logConsole(`Failed to apply bug fix: ${err.message}`, 'error');
           btn.removeAttribute('disabled');
-          btn.textContent = "Apply Fix";
+          btn.textContent = "⚡ Apply Fix";
         }
       });
     }
@@ -3865,9 +4067,30 @@ async function inviteCollaborator() {
   }
 }
 
-// 3. Export Codebase Bug Scan Results as Markdown
+// 3. Export Codebase Bug Scan Results & Bug Hunter Toolbar Wiring
 function initBugsExporter() {
-  el.btnExportBugReport.addEventListener('click', exportBugsMarkdown);
+  if (el.btnExportBugReport) {
+    el.btnExportBugReport.addEventListener('click', exportBugsMarkdown);
+  }
+  if (el.btnLoadDemoBugHunter) {
+    el.btnLoadDemoBugHunter.addEventListener('click', loadDemoRepoAndScan);
+  }
+  if (el.btnAutofixAll) {
+    el.btnAutofixAll.addEventListener('click', autoFixAllBugs);
+  }
+  if (el.bugSearchInput) {
+    el.bugSearchInput.addEventListener('input', renderBugHunterView);
+  }
+
+  // Severity filter pill buttons
+  document.querySelectorAll('.severity-filter-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.severity-filter-btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      activeBugSeverity = e.target.getAttribute('data-severity') || 'all';
+      renderBugHunterView();
+    });
+  });
 }
 
 function exportBugsMarkdown() {
