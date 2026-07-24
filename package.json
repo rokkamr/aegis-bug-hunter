@@ -4,6 +4,7 @@
   "description": "Aegis AI Bug Hunter - Unified QA Platform",
   "main": "api/db.js",
   "dependencies": {
-    "@vercel/postgres": "^0.9.0"
+    "@vercel/postgres": "^0.9.0",
+    "pg": "^8.11.3"
   }
 }

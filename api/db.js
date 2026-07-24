@@ -1,5 +1,20 @@
-const { sql } = require('@vercel/postgres');
+const { Pool } = require('pg');
 const crypto = require('crypto');
+
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+
+const sql = async (strings, ...values) => {
+  let queryText = strings[0];
+  for (let i = 1; i < strings.length; i++) {
+    queryText += `$${i}` + strings[i];
+  }
+  return await pool.query(queryText, values);
+};
 
 async function initDb() {
   if (!process.env.POSTGRES_URL && !process.env.POSTGRES_URL_NON_POOLING && !process.env.DATABASE_URL) {
