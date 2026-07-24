@@ -62,6 +62,29 @@ async function initDb() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;
+
+    // Create project_members table
+    await sql`
+      CREATE TABLE IF NOT EXISTS project_members (
+        project_id INT NOT NULL,
+        user_id INT NOT NULL,
+        role VARCHAR(50) DEFAULT 'collaborator',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (project_id, user_id)
+      );
+    `;
+
+    // Create api_collections table
+    await sql`
+      CREATE TABLE IF NOT EXISTS api_collections (
+        id VARCHAR(255) PRIMARY KEY,
+        user_id INT NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        requests TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
   } catch (err) {
     console.error('Database initialization failed:', err);
     throw err;

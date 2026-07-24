@@ -173,6 +173,24 @@
                   <p style="font-size: 0.8rem; color: hsl(215, 20%, 55%); margin-top: 8px;">Supports JS, TS, Python, HTML, CSS, C++, Java, Rust, Go, etc.</p>
                 </div>
               </div>
+              
+              <!-- Project Sharing / Collaborators Panel -->
+              <div class="glass-panel" id="project-sharing-panel" style="display: none; margin-top: 20px;">
+                <h3 style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                  <span>Teammates & Collaborators</span>
+                  <span style="font-size: 0.75rem; color: var(--color-primary); font-weight: 600;" id="collab-count">0 members</span>
+                </h3>
+                <p style="font-size: 0.82rem; color: hsl(215, 20%, 65%); margin-bottom: 16px;">
+                  Share this project with other developers to let them view security reports and collaborate on manual QA test runs.
+                </p>
+                <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                  <input type="email" id="collab-email-input" class="form-input" placeholder="teammate@company.com" style="flex: 1; padding: 8px 12px; font-size: 0.85rem;">
+                  <button class="btn btn-primary" id="btn-add-collab" style="padding: 0 16px; font-size: 0.85rem;">Invite</button>
+                </div>
+                <div id="collab-error-msg" style="color: var(--color-critical); font-size: 0.78rem; margin-bottom: 10px; display: none;"></div>
+                <div id="collaborators-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;">
+                  <!-- Collaborators rendered here -->
+                </div>
 
               <div class="glass-panel" id="scanner-status-panel" style="display: none;">
                 <div class="scan-progress-panel">
@@ -229,7 +247,10 @@
             <div class="split-right">
               <div class="flex-space" style="margin-bottom: 8px;">
                 <h3 style="font-size: 1.1rem;">Bug Reports</h3>
-                <span class="workspace-badge" style="font-size: 0.75rem;" id="bug-stats-badge">0 Issues Found</span>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <button class="btn btn-secondary" id="btn-export-bug-report" style="padding: 4px 10px; font-size: 0.75rem; display: none;">Export MD Report</button>
+                  <span class="workspace-badge" style="font-size: 0.75rem;" id="bug-stats-badge">0 Issues Found</span>
+                </div>
               </div>
               <div id="bug-details-list">
                 <div class="empty-state">
@@ -532,121 +553,193 @@
             </div>
           </div>
         </section>
-
+        
         <!-- API TESTER VIEW -->
         <section id="view-api-tester" class="view">
-          <div class="split-view">
-            <!-- Left Side: Request Builder -->
-            <div class="split-left">
-              <div class="glass-panel" style="margin-bottom: 0;">
-                <h3 style="margin-bottom: 16px;">Request Builder</h3>
+          <!-- API View Tab Bar -->
+          <div style="display: flex; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <button class="btn btn-secondary api-view-tab active" data-api-view="single" style="font-size: 0.85rem; padding: 6px 16px;">Single Request</button>
+            <button class="btn btn-secondary api-view-tab" data-api-view="collections" style="font-size: 0.85rem; padding: 6px 16px;">Test Collections (Batch Runner)</button>
+          </div>
 
-                <!-- URL Bar -->
-                <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-                  <select id="api-method-select" class="form-input" style="width: 130px; font-weight: 600; flex-shrink: 0;">
-                    <option value="GET">GET</option>
-                    <option value="POST">POST</option>
-                    <option value="PUT">PUT</option>
-                    <option value="PATCH">PATCH</option>
-                    <option value="DELETE">DELETE</option>
-                  </select>
-                  <input type="text" id="api-url-input" class="form-input" placeholder="https://api.example.com/endpoint" style="flex: 1;">
-                  <button class="btn btn-primary" id="btn-send-api" style="flex-shrink: 0;">Send</button>
-                </div>
+          <!-- Single request workspace -->
+          <div id="api-single-workspace">
+            <div class="split-view">
+              <!-- Left Side: Request Builder -->
+              <div class="split-left">
+                <div class="glass-panel" style="margin-bottom: 0;">
+                  <h3 style="margin-bottom: 16px;">Request Builder</h3>
 
-                <!-- Request Tabs -->
-                <div class="api-tabs" style="display: flex; gap: 0; border-bottom: 1px solid var(--border-color); margin-bottom: 16px;">
-                  <button class="api-tab active" data-api-tab="headers" style="padding: 8px 16px; background: none; border: none; color: var(--color-primary); border-bottom: 2px solid var(--color-primary); cursor: pointer; font-size: 0.85rem;">Headers</button>
-                  <button class="api-tab" data-api-tab="auth" style="padding: 8px 16px; background: none; border: none; color: hsl(215, 20%, 55%); border-bottom: 2px solid transparent; cursor: pointer; font-size: 0.85rem;">Auth</button>
-                  <button class="api-tab" data-api-tab="body" style="padding: 8px 16px; background: none; border: none; color: hsl(215, 20%, 55%); border-bottom: 2px solid transparent; cursor: pointer; font-size: 0.85rem;">Body</button>
-                </div>
+                  <!-- URL Bar -->
+                  <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                    <select id="api-method-select" class="form-input" style="width: 130px; font-weight: 600; flex-shrink: 0;">
+                      <option value="GET">GET</option>
+                      <option value="POST">POST</option>
+                      <option value="PUT">PUT</option>
+                      <option value="PATCH">PATCH</option>
+                      <option value="DELETE">DELETE</option>
+                    </select>
+                    <input type="text" id="api-url-input" class="form-input" placeholder="https://api.example.com/endpoint" style="flex: 1;">
+                    <button class="btn btn-primary" id="btn-send-api" style="flex-shrink: 0;">Send</button>
+                  </div>
 
-                <!-- Headers Tab -->
-                <div class="api-tab-content active" id="api-tab-headers">
-                  <div id="api-headers-container" style="display: flex; flex-direction: column; gap: 8px;">
-                    <div class="api-header-row" style="display: flex; gap: 8px;">
-                      <input type="text" class="form-input" placeholder="Header name" style="flex: 1;">
-                      <input type="text" class="form-input" placeholder="Value" style="flex: 1;">
-                      <button class="btn btn-secondary" style="padding: 6px 10px; flex-shrink: 0; color: var(--color-critical);">✕</button>
+                  <!-- Request Tabs -->
+                  <div class="api-tabs" style="display: flex; gap: 0; border-bottom: 1px solid var(--border-color); margin-bottom: 16px;">
+                    <button class="api-tab active" data-api-tab="headers" style="padding: 8px 16px; background: none; border: none; color: var(--color-primary); border-bottom: 2px solid var(--color-primary); cursor: pointer; font-size: 0.85rem;">Headers</button>
+                    <button class="api-tab" data-api-tab="auth" style="padding: 8px 16px; background: none; border: none; color: hsl(215, 20%, 55%); border-bottom: 2px solid transparent; cursor: pointer; font-size: 0.85rem;">Auth</button>
+                    <button class="api-tab" data-api-tab="body" style="padding: 8px 16px; background: none; border: none; color: hsl(215, 20%, 55%); border-bottom: 2px solid transparent; cursor: pointer; font-size: 0.85rem;">Body</button>
+                  </div>
+
+                  <!-- Headers Tab -->
+                  <div class="api-tab-content active" id="api-tab-headers">
+                    <div id="api-headers-container" style="display: flex; flex-direction: column; gap: 8px;">
+                      <div class="api-header-row" style="display: flex; gap: 8px;">
+                        <input type="text" class="form-input" placeholder="Header name" style="flex: 1;">
+                        <input type="text" class="form-input" placeholder="Value" style="flex: 1;">
+                        <button class="btn btn-secondary" style="padding: 6px 10px; flex-shrink: 0; color: var(--color-critical);">✕</button>
+                      </div>
+                    </div>
+                    <button class="btn btn-secondary" id="btn-add-header" style="margin-top: 12px; font-size: 0.8rem;">+ Add Header</button>
+                  </div>
+
+                  <!-- Auth Tab -->
+                  <div class="api-tab-content" id="api-tab-auth" style="display: none;">
+                    <div class="form-group">
+                      <label class="form-label" for="api-auth-type">Authorization Type</label>
+                      <select id="api-auth-type" class="form-input">
+                        <option value="none">None</option>
+                        <option value="bearer">Bearer Token</option>
+                        <option value="basic">Basic Auth</option>
+                        <option value="apikey">API Key</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="api-auth-token">Token / API Key</label>
+                      <input type="text" id="api-auth-token" class="form-input" placeholder="Enter token or API key">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="api-auth-username">Username</label>
+                      <input type="text" id="api-auth-username" class="form-input" placeholder="Username (Basic Auth)">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="api-auth-password">Password</label>
+                      <input type="password" id="api-auth-password" class="form-input" placeholder="Password (Basic Auth)">
                     </div>
                   </div>
-                  <button class="btn btn-secondary" id="btn-add-header" style="margin-top: 12px; font-size: 0.8rem;">+ Add Header</button>
-                </div>
 
-                <!-- Auth Tab -->
-                <div class="api-tab-content" id="api-tab-auth" style="display: none;">
-                  <div class="form-group">
-                    <label class="form-label" for="api-auth-type">Authorization Type</label>
-                    <select id="api-auth-type" class="form-input">
-                      <option value="none">None</option>
-                      <option value="bearer">Bearer Token</option>
-                      <option value="basic">Basic Auth</option>
-                      <option value="apikey">API Key</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="api-auth-token">Token / API Key</label>
-                    <input type="text" id="api-auth-token" class="form-input" placeholder="Enter token or API key">
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="api-auth-username">Username</label>
-                    <input type="text" id="api-auth-username" class="form-input" placeholder="Username (Basic Auth)">
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="api-auth-password">Password</label>
-                    <input type="password" id="api-auth-password" class="form-input" placeholder="Password (Basic Auth)">
+                  <!-- Body Tab -->
+                  <div class="api-tab-content" id="api-tab-body" style="display: none;">
+                    <div class="form-group">
+                      <label class="form-label" for="api-body-editor">Request Body (JSON)</label>
+                      <textarea id="api-body-editor" class="form-input" rows="10" placeholder='{&#10;  "key": "value"&#10;}' style="font-family: var(--font-mono); font-size: 0.85rem; resize: vertical;"></textarea>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                <!-- Body Tab -->
-                <div class="api-tab-content" id="api-tab-body" style="display: none;">
-                  <div class="form-group">
-                    <label class="form-label" for="api-body-editor">Request Body (JSON)</label>
-                    <textarea id="api-body-editor" class="form-input" rows="10" placeholder='{&#10;  "key": "value"&#10;}' style="font-family: var(--font-mono); font-size: 0.85rem; resize: vertical;"></textarea>
+              <!-- Right Side: Response & History -->
+              <div class="split-right">
+                <!-- Response Panel -->
+                <div class="glass-panel" style="margin-bottom: 16px;">
+                  <div class="flex-space" style="margin-bottom: 12px;">
+                    <h3>Response</h3>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <span class="api-status-badge" id="api-response-status" style="padding: 4px 12px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; background-color: hsl(215, 25%, 15%); color: hsl(215, 20%, 55%);">---</span>
+                      <span id="api-response-time" style="font-size: 0.8rem; color: hsl(215, 20%, 55%); font-family: var(--font-mono);">0 ms</span>
+                    </div>
+                  </div>
+                  <div style="background-color: hsl(222, 47%, 3%); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; max-height: 300px; overflow-y: auto;">
+                    <pre style="margin: 0;"><code id="api-response-body" style="font-family: var(--font-mono); font-size: 0.85rem; color: hsl(210, 40%, 90%); white-space: pre-wrap; word-break: break-all;">Send a request to see the response here.</code></pre>
+                  </div>
+                  <div style="margin-top: 12px;">
+                    <h4 style="font-size: 0.85rem; color: hsl(215, 20%, 65%); margin-bottom: 8px;">Response Headers</h4>
+                    <div id="api-response-headers" style="font-family: var(--font-mono); font-size: 0.8rem; color: hsl(215, 20%, 55%); background-color: hsl(222, 47%, 4%); border-radius: 6px; padding: 10px; max-height: 100px; overflow-y: auto;">No response headers yet.</div>
+                  </div>
+                </div>
+
+                <!-- AI Analysis -->
+                <div class="glass-panel" style="margin-bottom: 16px;">
+                  <div class="flex-space" style="margin-bottom: 12px;">
+                    <h3>AI Analysis</h3>
+                    <button class="btn btn-secondary" id="btn-ai-analyze-api" style="font-size: 0.8rem;">Analyze with AI</button>
+                  </div>
+                  <div id="api-ai-analysis">
+                    <div class="empty-state" style="padding: 20px 10px;">
+                      <p style="font-size: 0.85rem;">Send a request and click "Analyze with AI" to get insights on the response.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- History Panel -->
+                <div class="glass-panel" style="margin-bottom: 0;">
+                  <h3 style="margin-bottom: 12px;">Request History</h3>
+                  <div id="api-history-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;">
+                    <div class="empty-state" style="padding: 20px 10px;">
+                      <p style="font-size: 0.85rem;">No requests sent yet. History will appear here.</p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <!-- Right Side: Response & History -->
-            <div class="split-right">
-              <!-- Response Panel -->
-              <div class="glass-panel" style="margin-bottom: 16px;">
-                <div class="flex-space" style="margin-bottom: 12px;">
-                  <h3>Response</h3>
-                  <div style="display: flex; align-items: center; gap: 12px;">
-                    <span class="api-status-badge" id="api-response-status" style="padding: 4px 12px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; background-color: hsl(215, 25%, 15%); color: hsl(215, 20%, 55%);">---</span>
-                    <span id="api-response-time" style="font-size: 0.8rem; color: hsl(215, 20%, 55%); font-family: var(--font-mono);">0 ms</span>
+          <!-- Collections batch runner workspace -->
+          <div id="api-collections-workspace" style="display: none;">
+            <div class="split-view">
+              <!-- Left Side: Collections List -->
+              <div class="split-left">
+                <div class="glass-panel" style="margin-bottom: 0; display: flex; flex-direction: column; height: 100%;">
+                  <div class="flex-space" style="margin-bottom: 16px;">
+                    <h3>Test Collections</h3>
+                    <button class="btn btn-primary" id="btn-create-collection" style="font-size: 0.75rem; padding: 4px 8px;">+ New</button>
                   </div>
-                </div>
-                <div style="background-color: hsl(222, 47%, 3%); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; max-height: 300px; overflow-y: auto;">
-                  <pre style="margin: 0;"><code id="api-response-body" style="font-family: var(--font-mono); font-size: 0.85rem; color: hsl(210, 40%, 90%); white-space: pre-wrap; word-break: break-all;">Send a request to see the response here.</code></pre>
-                </div>
-                <div style="margin-top: 12px;">
-                  <h4 style="font-size: 0.85rem; color: hsl(215, 20%, 65%); margin-bottom: 8px;">Response Headers</h4>
-                  <div id="api-response-headers" style="font-family: var(--font-mono); font-size: 0.8rem; color: hsl(215, 20%, 55%); background-color: hsl(222, 47%, 4%); border-radius: 6px; padding: 10px; max-height: 100px; overflow-y: auto;">No response headers yet.</div>
-                </div>
-              </div>
-
-              <!-- AI Analysis -->
-              <div class="glass-panel" style="margin-bottom: 16px;">
-                <div class="flex-space" style="margin-bottom: 12px;">
-                  <h3>AI Analysis</h3>
-                  <button class="btn btn-secondary" id="btn-ai-analyze-api" style="font-size: 0.8rem;">Analyze with AI</button>
-                </div>
-                <div id="api-ai-analysis">
-                  <div class="empty-state" style="padding: 20px 10px;">
-                    <p style="font-size: 0.85rem;">Send a request and click "Analyze with AI" to get insights on the response.</p>
+                  <div id="collections-list-container" style="flex-grow: 1; overflow-y: auto; max-height: calc(100vh - 350px); display: flex; flex-direction: column; gap: 8px;">
+                    <div class="empty-state">
+                      <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; margin-bottom: 8px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                      <p style="font-size: 0.8rem; line-height: 1.4;">No collections found.<br>Create a collection to group automated tests.</p>
+                    </div>
                   </div>
                 </div>
               </div>
+              
+              <!-- Right Side: Collection Runner -->
+              <div class="split-right">
+                <div class="glass-panel" id="collection-runner-panel" style="display: none; flex-direction: column; height: 100%; margin-bottom: 0;">
+                  <div class="flex-space" style="margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; align-items: flex-start;">
+                    <div>
+                      <h3 id="runner-collection-name" style="font-size: 1.15rem;">My Collection</h3>
+                      <p id="runner-collection-desc" style="font-size: 0.8rem; color: hsl(215, 20%, 65%); margin-top: 4px;">Collection description</p>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                      <button class="btn btn-primary" id="btn-run-collection" style="padding: 6px 12px; font-size: 0.8rem;">Run Batch Tests</button>
+                      <button class="btn btn-secondary" id="btn-add-request-to-col" style="padding: 6px 12px; font-size: 0.8rem;">+ Add Request</button>
+                      <button class="btn btn-secondary" id="btn-delete-collection" style="padding: 6px 10px; font-size: 0.8rem; color: var(--color-critical);">✕</button>
+                    </div>
+                  </div>
+                  
+                  <div style="margin-bottom: 20px;">
+                    <h4 style="font-size: 0.85rem; color: hsl(215, 20%, 75%); margin-bottom: 8px;">Collection Endpoints</h4>
+                    <div id="collection-requests-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;">
+                      <!-- Requests render here -->
+                    </div>
+                  </div>
 
-              <!-- History Panel -->
-              <div class="glass-panel" style="margin-bottom: 0;">
-                <h3 style="margin-bottom: 12px;">Request History</h3>
-                <div id="api-history-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;">
-                  <div class="empty-state" style="padding: 20px 10px;">
-                    <p style="font-size: 0.85rem;">No requests sent yet. History will appear here.</p>
+                  <div style="flex-grow: 1; display: flex; flex-direction: column; border-top: 1px solid var(--border-color); padding-top: 16px; min-height: 200px;">
+                    <div class="flex-space" style="margin-bottom: 10px;">
+                      <h4 style="font-size: 0.85rem; color: hsl(215, 20%, 75%);">Automation Test Execution Output</h4>
+                      <div id="runner-stats-badge" style="display: none; font-size: 0.75rem; font-weight: bold; background: hsla(215, 25%, 15%, 0.6); padding: 4px 8px; border-radius: 4px;">
+                        Passed: <span id="runner-val-pass" style="color: hsl(142,70%,45%);">0</span> | Failed: <span id="runner-val-fail" style="color: var(--color-critical);">0</span>
+                      </div>
+                    </div>
+                    <div class="console-container" id="collection-runner-console" style="flex-grow: 1; background-color: hsl(222, 47%, 3%); padding: 12px; max-height: 250px;">
+                      <div class="console-line info">[System] Sequenced runner initialized. Click "Run Batch Tests" to execute collection endpoints and verify assertions.</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="glass-panel" id="collection-runner-empty-state" style="margin-bottom: 0;">
+                  <div class="empty-state">
+                    <p style="font-size: 0.85rem;">Select an API collection on the left or create a new folder to begin batch automated testing.</p>
                   </div>
                 </div>
               </div>
@@ -854,6 +947,93 @@
         <span id="auth-toggle-text">Don't have an account?</span>
         <a href="#" id="link-auth-toggle" style="color: var(--color-primary); text-decoration: none; margin-left: 4px; font-weight: 600;">Sign Up</a>
       </p>
+    </div>
+  </div>
+
+  <!-- Create Collection Modal -->
+  <div class="tc-form-overlay" id="collection-form-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="glass-panel" style="width: 100%; max-width: 440px; margin: auto;">
+      <h3 style="margin-bottom: 20px;" id="col-form-title">Create API Collection</h3>
+      <div class="form-group">
+        <label class="form-label" for="col-name-input">Collection Name</label>
+        <input type="text" id="col-name-input" class="form-input" placeholder="e.g., Stripe Payment Integration">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="col-desc-input">Description</label>
+        <textarea id="col-desc-input" class="form-input" rows="3" placeholder="Describe the purpose of this request collection..."></textarea>
+      </div>
+      <div style="display: flex; gap: 12px; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+        <button class="btn btn-primary" id="btn-col-save">Save Collection</button>
+        <button class="btn btn-secondary" id="btn-col-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Request to Collection Modal -->
+  <div class="tc-form-overlay" id="add-request-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="glass-panel" style="width: 100%; max-width: 500px; margin: auto; max-height: 90vh; overflow-y: auto;">
+      <h3 style="margin-bottom: 20px;">Add Request to Collection</h3>
+      <div class="form-group">
+        <label class="form-label" for="col-req-name">Request Name</label>
+        <input type="text" id="col-req-name" class="form-input" placeholder="e.g., Create Customer Profile">
+      </div>
+      <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <select id="col-req-method" class="form-input" style="width: 100px; font-weight:600; flex-shrink: 0;">
+          <option value="GET">GET</option>
+          <option value="POST" selected>POST</option>
+          <option value="PUT">PUT</option>
+          <option value="DELETE">DELETE</option>
+        </select>
+        <input type="text" id="col-req-url" class="form-input" placeholder="https://api.stripe.com/v1/customers" style="flex: 1;">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="col-req-body">Request Body (JSON)</label>
+        <textarea id="col-req-body" class="form-input" rows="4" placeholder="{}" style="font-family: var(--font-mono); font-size: 0.85rem;"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Test Assertions (Checked on Run)</label>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+            <input type="checkbox" id="assert-status" checked style="accent-color: var(--color-primary);"> Status is 200 / 2xx Success
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+            <input type="checkbox" id="assert-time" checked style="accent-color: var(--color-primary);"> Response time is less than 600ms
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+            <input type="checkbox" id="assert-json" style="accent-color: var(--color-primary);"> Response is valid JSON format
+          </label>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary); white-space: nowrap;">
+              <input type="checkbox" id="assert-key" style="accent-color: var(--color-primary);"> Body has key:
+            </label>
+            <input type="text" id="assert-key-name" class="form-input" placeholder="e.g., id, token, success" style="padding: 4px 8px; font-size: 0.8rem; width: 120px;">
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center; margin-top: 12px; background: hsla(210, 80%, 55%, 0.08); padding: 8px 12px; border-radius: 6px;">
+        <button class="btn btn-secondary" id="btn-col-ai-assert" style="font-size: 0.75rem; padding: 4px 10px; background: var(--color-primary); color: white; border: none;">AI Generate Assertions</button>
+        <span style="font-size: 0.75rem; color: hsl(215, 20%, 65%);">Gemini will write custom checks!</span>
+      </div>
+      <div style="display: flex; gap: 12px; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+        <button class="btn btn-primary" id="btn-col-req-save">Add Request</button>
+        <button class="btn btn-secondary" id="btn-col-req-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Guided Tour Overlay -->
+  <div id="tour-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
+    <div class="glass-panel" id="tour-card" style="width: min(440px, 90vw); padding: 24px; border: 1px solid var(--color-primary); box-shadow: 0 0 20px var(--color-primary-glow);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span style="font-weight: bold; color: var(--color-primary); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;" id="tour-step-indicator">Step 1 of 5</span>
+        <button id="btn-tour-skip" style="background:transparent; border:none; color: hsl(215, 20%, 55%); cursor:pointer; font-size:0.8rem;">Skip Tour</button>
+      </div>
+      <h3 id="tour-title" style="margin-bottom: 10px; font-size: 1.15rem;">Welcome to Aegis AI</h3>
+      <p id="tour-text" style="font-size: 0.88rem; color: hsl(215, 20%, 80%); line-height: 1.5; margin-bottom: 20px;">Aegis is an all-in-one AI-powered QA testing platform. Let's show you around!</p>
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 16px;">
+        <button class="btn btn-secondary" id="btn-tour-prev" style="padding: 4px 12px; font-size: 0.8rem;">Previous</button>
+        <button class="btn btn-primary" id="btn-tour-next" style="padding: 4px 16px; font-size: 0.8rem;">Next</button>
+      </div>
     </div>
   </div>
 

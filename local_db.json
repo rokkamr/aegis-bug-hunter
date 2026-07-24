@@ -1,0 +1,19 @@
+﻿{
+    "users":  [
+                  {
+                      "id":  1,
+                      "email":  "testx@gmail.com",
+                      "password":  "Password@123",
+                      "created_at":  "2026-07-18T01:49:34.2384666+05:30"
+                  }
+              ],
+    "projects":  [
+
+                 ],
+    "test_cases":  [
+
+                   ],
+    "bug_reports":  [
+
+                    ]
+}

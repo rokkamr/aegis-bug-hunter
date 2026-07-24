@@ -19,9 +19,23 @@ module.exports = async (req, res) => {
       const { projectId } = req.query;
       let result;
       if (projectId) {
-        result = await sql`SELECT * FROM bug_reports WHERE user_id = ${userId} AND project_id = ${projectId} ORDER BY created_at DESC`;
+        // Verify they own or are member of project
+        const projectCheck = await sql`
+          SELECT id FROM projects WHERE id = ${projectId} AND user_id = ${userId}
+          UNION
+          SELECT project_id FROM project_members WHERE project_id = ${projectId} AND user_id = ${userId}
+        `;
+        if (projectCheck.rowCount === 0) {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
+        result = await sql`SELECT * FROM bug_reports WHERE project_id = ${projectId} ORDER BY created_at DESC`;
       } else {
-        result = await sql`SELECT * FROM bug_reports WHERE user_id = ${userId} ORDER BY created_at DESC`;
+        result = await sql`
+          SELECT * FROM bug_reports 
+          WHERE user_id = ${userId} 
+             OR project_id IN (SELECT project_id FROM project_members WHERE user_id = ${userId})
+          ORDER BY created_at DESC
+        `;
       }
       return res.status(200).json(result.rows);
     }
@@ -34,6 +48,15 @@ module.exports = async (req, res) => {
       for (const bug of bugs) {
         const { projectId, fileName, bugType, severity, description, originalCode, fixedCode } = bug;
         if (!fileName || !description) continue;
+
+        if (projectId) {
+          const projectCheck = await sql`
+            SELECT id FROM projects WHERE id = ${projectId} AND user_id = ${userId}
+            UNION
+            SELECT project_id FROM project_members WHERE project_id = ${projectId} AND user_id = ${userId}
+          `;
+          if (projectCheck.rowCount === 0) continue;
+        }
 
         const insertResult = await sql`
           INSERT INTO bug_reports (user_id, project_id, file_name, bug_type, severity, description, original_code, fixed_code)
@@ -49,6 +72,6 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method Not Allowed' });
   } catch (err) {
     console.error('Bugs API error:', err);
-    return res.status(500).json({ error: 'Internal Server Error', details: err.message });
+    return res.status(500).json({ error: err.message || 'Internal Server Error' });
   }
 };

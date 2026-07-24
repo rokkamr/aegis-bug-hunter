@@ -16,7 +16,13 @@ module.exports = async (req, res) => {
 
   try {
     if (req.method === 'GET') {
-      const result = await sql`SELECT * FROM test_cases WHERE user_id = ${userId} ORDER BY created_at DESC`;
+      const result = await sql`
+        SELECT * FROM test_cases 
+        WHERE user_id = ${userId} 
+           OR project_id IN (SELECT project_id FROM project_members WHERE user_id = ${userId})
+           OR project_id IN (SELECT id FROM projects WHERE user_id = ${userId})
+        ORDER BY created_at DESC
+      `;
       return res.status(200).json(result.rows);
     }
 
@@ -24,6 +30,17 @@ module.exports = async (req, res) => {
       const { id, projectId, title, description, steps, expectedResult, priority, category, status } = req.body;
       if (!id || !title) {
         return res.status(400).json({ error: 'ID and title are required' });
+      }
+
+      if (projectId) {
+        const projectCheck = await sql`
+          SELECT id FROM projects WHERE id = ${projectId} AND user_id = ${userId}
+          UNION
+          SELECT project_id FROM project_members WHERE project_id = ${projectId} AND user_id = ${userId}
+        `;
+        if (projectCheck.rowCount === 0) {
+          return res.status(403).json({ error: 'You do not have access to this project' });
+        }
       }
 
       await sql`
@@ -41,12 +58,27 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: 'ID is required for updates' });
       }
 
-      // Check ownership
-      const existing = await sql`SELECT user_id FROM test_cases WHERE id = ${id}`;
+      // Check ownership or project membership
+      const existing = await sql`SELECT user_id, project_id FROM test_cases WHERE id = ${id}`;
       if (existing.rowCount === 0) {
         return res.status(404).json({ error: 'Test case not found' });
       }
-      if (existing.rows[0].user_id !== userId) {
+      
+      const tc = existing.rows[0];
+      let hasAccess = tc.user_id === userId;
+      
+      if (!hasAccess && tc.project_id) {
+        const projectCheck = await sql`
+          SELECT id FROM projects WHERE id = ${tc.project_id} AND user_id = ${userId}
+          UNION
+          SELECT project_id FROM project_members WHERE project_id = ${tc.project_id} AND user_id = ${userId}
+        `;
+        if (projectCheck.rowCount > 0) {
+          hasAccess = true;
+        }
+      }
+
+      if (!hasAccess) {
         return res.status(403).json({ error: 'Forbidden' });
       }
 
@@ -77,12 +109,27 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: 'ID query param is required' });
       }
 
-      // Check ownership
-      const existing = await sql`SELECT user_id FROM test_cases WHERE id = ${id}`;
+      // Check ownership or project membership
+      const existing = await sql`SELECT user_id, project_id FROM test_cases WHERE id = ${id}`;
       if (existing.rowCount === 0) {
         return res.status(404).json({ error: 'Test case not found' });
       }
-      if (existing.rows[0].user_id !== userId) {
+      
+      const tc = existing.rows[0];
+      let hasAccess = tc.user_id === userId;
+      
+      if (!hasAccess && tc.project_id) {
+        const projectCheck = await sql`
+          SELECT id FROM projects WHERE id = ${tc.project_id} AND user_id = ${userId}
+          UNION
+          SELECT project_id FROM project_members WHERE project_id = ${tc.project_id} AND user_id = ${userId}
+        `;
+        if (projectCheck.rowCount > 0) {
+          hasAccess = true;
+        }
+      }
+
+      if (!hasAccess) {
         return res.status(403).json({ error: 'Forbidden' });
       }
 
@@ -93,6 +140,6 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method Not Allowed' });
   } catch (err) {
     console.error('Test Cases API error:', err);
-    return res.status(500).json({ error: 'Internal Server Error', details: err.message });
+    return res.status(500).json({ error: err.message || 'Internal Server Error' });
   }
 };

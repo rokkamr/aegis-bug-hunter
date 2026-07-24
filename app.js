@@ -37,12 +37,17 @@ const state = {
   // API Tester State
   apiHistory: JSON.parse(localStorage.getItem('aegis_api_history') || '[]'),
   apiActiveTab: 'headers',
+  apiCollections: [],
+  activeCollectionId: null,
   
   // Accessibility Checker State
   a11yResults: null,
   
   // Performance Analyzer State
-  perfResults: null
+  perfResults: null,
+
+  // Tour State
+  tourStep: 0
 };
 
 // UI Elements
@@ -196,7 +201,64 @@ const el = {
   perfScoreSeo: document.getElementById('perf-score-seo'),
   perfScoreBestpractices: document.getElementById('perf-score-bestpractices'),
   perfChecklistContainer: document.getElementById('perf-checklist-container'),
-  perfDetailsContainer: document.getElementById('perf-details-container')
+  perfDetailsContainer: document.getElementById('perf-details-container'),
+
+  // Project Sharing
+  projectSharingPanel: document.getElementById('project-sharing-panel'),
+  collabCount: document.getElementById('collab-count'),
+  collabEmailInput: document.getElementById('collab-email-input'),
+  btnAddCollab: document.getElementById('btn-add-collab'),
+  collabErrorMsg: document.getElementById('collab-error-msg'),
+  collaboratorsList: document.getElementById('collaborators-list'),
+
+  // Export bugs
+  btnExportBugReport: document.getElementById('btn-export-bug-report'),
+
+  // Collection Runner Modals and Workspaces
+  btnCreateCollection: document.getElementById('btn-create-collection'),
+  collectionsListContainer: document.getElementById('collections-list-container'),
+  collectionRunnerPanel: document.getElementById('collection-runner-panel'),
+  collectionRunnerEmptyState: document.getElementById('collection-runner-empty-state'),
+  runnerCollectionName: document.getElementById('runner-collection-name'),
+  runnerCollectionDesc: document.getElementById('runner-collection-desc'),
+  btnRunCollection: document.getElementById('btn-run-collection'),
+  btnAddRequestToCol: document.getElementById('btn-add-request-to-col'),
+  btnDeleteCollection: document.getElementById('btn-delete-collection'),
+  collectionRequestsList: document.getElementById('collection-requests-list'),
+  runnerStatsBadge: document.getElementById('runner-stats-badge'),
+  runnerValPass: document.getElementById('runner-val-pass'),
+  runnerValFail: document.getElementById('runner-val-fail'),
+  collectionRunnerConsole: document.getElementById('collection-runner-console'),
+
+  collectionFormModal: document.getElementById('collection-form-modal'),
+  colFormTitle: document.getElementById('col-form-title'),
+  colNameInput: document.getElementById('col-name-input'),
+  colDescInput: document.getElementById('col-desc-input'),
+  btnColSave: document.getElementById('btn-col-save'),
+  btnColCancel: document.getElementById('btn-col-cancel'),
+
+  addRequestModal: document.getElementById('add-request-modal'),
+  colReqName: document.getElementById('col-req-name'),
+  colReqMethod: document.getElementById('col-req-method'),
+  colReqUrl: document.getElementById('col-req-url'),
+  colReqBody: document.getElementById('col-req-body'),
+  assertStatus: document.getElementById('assert-status'),
+  assertTime: document.getElementById('assert-time'),
+  assertJson: document.getElementById('assert-json'),
+  assertKey: document.getElementById('assert-key'),
+  assertKeyName: document.getElementById('assert-key-name'),
+  btnColAiAssert: document.getElementById('btn-col-ai-assert'),
+  btnColReqSave: document.getElementById('btn-col-req-save'),
+  btnColReqCancel: document.getElementById('btn-col-req-cancel'),
+
+  // Guided Tour
+  tourOverlay: document.getElementById('tour-overlay'),
+  tourStepIndicator: document.getElementById('tour-step-indicator'),
+  btnTourSkip: document.getElementById('btn-tour-skip'),
+  tourTitle: document.getElementById('tour-title'),
+  tourText: document.getElementById('tour-text'),
+  btnTourPrev: document.getElementById('btn-tour-prev'),
+  btnTourNext: document.getElementById('btn-tour-next')
 };
 
 // Supported extensions for text analysis
@@ -2956,11 +3018,14 @@ function handleLogout() {
   state.token = '';
   state.userEmail = '';
   state.projectId = '';
+  state.activeCollectionId = null;
   localStorage.removeItem('aegis_token');
   localStorage.removeItem('aegis_user_email');
   localStorage.removeItem('aegis_project_id');
   updateAuthState();
   logConsole('[Auth]', 'Logged out', 'info');
+  if (el.projectSharingPanel) el.projectSharingPanel.style.display = 'none';
+  if (el.collectionRunnerPanel) el.collectionRunnerPanel.style.display = 'none';
 }
 
 function showAuthError(msg) {
@@ -3009,6 +3074,7 @@ async function saveProjectToDb(name, path) {
       localStorage.setItem('aegis_project_id', data.id);
       logConsole(`Project synced in cloud DB (ID: ${data.id})`, 'success');
       syncTestCasesFromDb();
+      loadCollaborators();
     }
   } catch (err) {
     console.error('Error saving project to DB:', err);
@@ -3072,6 +3138,16 @@ function startup() {
   initApiTester();
   initAccessibilityChecker();
   initPerformanceAnalyzer();
+  
+  // Initialize advanced B2B automation features
+  initApiTesterCollections();
+  initProjectSharing();
+  initBugsExporter();
+  initGuidedTour();
+
+  if (state.projectId) {
+    loadCollaborators();
+  }
 }
 
 el.btnSaveSettings.addEventListener('click', updateChatState);
@@ -3079,3 +3155,644 @@ el.btnRemoveKey.addEventListener('click', updateChatState);
 
 // Run startup
 startup();
+
+// ============================================================
+// ADVANCED B2B AUTOMATION FEATURES (Collections, Teammates, Tour, Exports)
+// ============================================================
+
+// 1. API View Tab Switcher & Collections Initialization
+function initApiTesterCollections() {
+  const tabs = document.querySelectorAll('.api-view-tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const view = tab.dataset.apiView;
+      if (view === 'single') {
+        document.getElementById('api-single-workspace').style.display = 'block';
+        document.getElementById('api-collections-workspace').style.display = 'none';
+      } else {
+        document.getElementById('api-single-workspace').style.display = 'none';
+        document.getElementById('api-collections-workspace').style.display = 'block';
+        loadCollections();
+      }
+    });
+  });
+
+  el.btnCreateCollection.addEventListener('click', () => openCollectionForm());
+  el.btnColCancel.addEventListener('click', () => { el.collectionFormModal.style.display = 'none'; });
+  el.btnColSave.addEventListener('click', saveCollection);
+  el.btnRunCollection.addEventListener('click', runCollection);
+  el.btnAddRequestToCol.addEventListener('click', () => openAddRequestModal());
+  el.btnColReqCancel.addEventListener('click', () => { el.addRequestModal.style.display = 'none'; });
+  el.btnColReqSave.addEventListener('click', saveRequestToCollection);
+  el.btnDeleteCollection.addEventListener('click', deleteActiveCollection);
+  el.btnColAiAssert.addEventListener('click', aiGenerateAssertions);
+}
+
+// Collections CRUD
+async function loadCollections() {
+  if (!state.token) return;
+  try {
+    const res = await apiFetch('/api/collections');
+    if (res.ok) {
+      state.apiCollections = await res.json();
+      renderCollectionsList();
+    }
+  } catch (err) {
+    console.error('Error loading collections:', err);
+  }
+}
+
+function renderCollectionsList() {
+  const container = el.collectionsListContainer;
+  container.innerHTML = '';
+  if (state.apiCollections.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; margin-bottom: 8px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <p style="font-size: 0.8rem; line-height: 1.4;">No collections found.<br>Create a collection to group automated tests.</p>
+      </div>
+    `;
+    return;
+  }
+
+  state.apiCollections.forEach(col => {
+    const div = document.createElement('div');
+    div.className = `collection-folder-card ${state.activeCollectionId === col.id ? 'active' : ''}`;
+    div.innerHTML = `
+      <span class="collection-folder-icon">📁</span>
+      <div style="flex: 1; text-align: left;">
+        <div style="font-weight: 600; font-size: 0.88rem; color: white;">${col.name}</div>
+        <div style="font-size: 0.75rem; color: hsl(215, 20%, 65%); margin-top: 2px;">${col.requests ? (typeof col.requests === 'string' ? JSON.parse(col.requests).length : col.requests.length) : 0} requests</div>
+      </div>
+    `;
+    div.addEventListener('click', () => {
+      state.activeCollectionId = col.id;
+      document.querySelectorAll('.collection-folder-card').forEach(c => c.classList.remove('active'));
+      div.classList.add('active');
+      showCollectionWorkspace(col);
+    });
+    container.appendChild(div);
+  });
+}
+
+function showCollectionWorkspace(col) {
+  el.collectionRunnerEmptyState.style.display = 'none';
+  el.collectionRunnerPanel.style.display = 'flex';
+  el.runnerCollectionName.textContent = col.name;
+  el.runnerCollectionDesc.textContent = col.description || 'No description provided.';
+  renderCollectionRequests(col);
+}
+
+function renderCollectionRequests(col) {
+  const reqsList = el.collectionRequestsList;
+  reqsList.innerHTML = '';
+  const reqs = col.requests ? (typeof col.requests === 'string' ? JSON.parse(col.requests) : col.requests) : [];
+  
+  if (reqs.length === 0) {
+    reqsList.innerHTML = `<p style="font-size: 0.85rem; color: hsl(215, 20%, 55%); padding: 12px; text-align: center;">No requests in this collection yet.</p>`;
+    return;
+  }
+
+  reqs.forEach((r, idx) => {
+    const div = document.createElement('div');
+    div.className = 'collection-endpoint-row';
+    const methodClass = r.method.toLowerCase();
+    div.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 10px; overflow: hidden; flex: 1;">
+        <span class="api-method-badge ${methodClass}">${r.method}</span>
+        <span style="font-family: var(--font-mono); font-size: 0.8rem; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">${r.name || r.url}</span>
+      </div>
+      <button class="btn btn-secondary" style="padding: 2px 6px; font-size: 0.75rem; color: var(--color-critical); border: none;" onclick="removeRequestFromCollection(${idx})">✕</button>
+    `;
+    reqsList.appendChild(div);
+  });
+}
+
+// Remove Request helper
+window.removeRequestFromCollection = async function(idx) {
+  const col = state.apiCollections.find(c => c.id === state.activeCollectionId);
+  if (!col) return;
+  const reqs = col.requests ? (typeof col.requests === 'string' ? JSON.parse(col.requests) : col.requests) : [];
+  reqs.splice(idx, 1);
+  col.requests = reqs;
+
+  try {
+    const res = await apiFetch('/api/collections', {
+      method: 'PUT',
+      body: JSON.stringify({ id: col.id, requests: reqs })
+    });
+    if (res.ok) {
+      loadCollections();
+      showCollectionWorkspace(col);
+    }
+  } catch (err) {
+    console.error('Error removing request:', err);
+  }
+};
+
+function openCollectionForm() {
+  el.colNameInput.value = '';
+  el.colDescInput.value = '';
+  el.collectionFormModal.style.display = 'flex';
+}
+
+async function saveCollection() {
+  const name = el.colNameInput.value.trim();
+  const description = el.colDescInput.value.trim();
+  if (!name) return;
+
+  const id = 'col_' + Date.now();
+  const payload = { id, name, description, requests: [] };
+
+  try {
+    const res = await apiFetch('/api/collections', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      el.collectionFormModal.style.display = 'none';
+      loadCollections();
+    }
+  } catch (err) {
+    console.error('Error creating collection:', err);
+  }
+}
+
+async function deleteActiveCollection() {
+  if (!state.activeCollectionId) return;
+  if (!confirm('Are you sure you want to delete this collection?')) return;
+
+  try {
+    const res = await apiFetch(`/api/collections?id=${state.activeCollectionId}`, {
+      method: 'DELETE'
+    });
+    if (res.ok) {
+      state.activeCollectionId = null;
+      el.collectionRunnerPanel.style.display = 'none';
+      el.collectionRunnerEmptyState.style.display = 'block';
+      loadCollections();
+    }
+  } catch (err) {
+    console.error('Error deleting collection:', err);
+  }
+}
+
+// Add Request Modal Form
+function openAddRequestModal() {
+  el.colReqName.value = '';
+  el.colReqUrl.value = '';
+  el.colReqBody.value = '';
+  el.assertStatus.checked = true;
+  el.assertTime.checked = true;
+  el.assertJson.checked = false;
+  el.assertKey.checked = false;
+  el.assertKeyName.value = '';
+  el.addRequestModal.style.display = 'flex';
+}
+
+async function saveRequestToCollection() {
+  const col = state.apiCollections.find(c => c.id === state.activeCollectionId);
+  if (!col) return;
+
+  const name = el.colReqName.value.trim() || 'Request';
+  const method = el.colReqMethod.value;
+  const url = el.colReqUrl.value.trim();
+  const body = el.colReqBody.value.trim();
+
+  if (!url) return;
+
+  const assertions = [];
+  if (el.assertStatus.checked) assertions.push({ type: 'status_2xx' });
+  if (el.assertTime.checked) assertions.push({ type: 'response_time', limit: 600 });
+  if (el.assertJson.checked) assertions.push({ type: 'valid_json' });
+  if (el.assertKey.checked && el.assertKeyName.value.trim()) {
+    assertions.push({ type: 'has_key', key: el.assertKeyName.value.trim() });
+  }
+
+  const reqObj = { name, method, url, body, assertions };
+  const reqs = col.requests ? (typeof col.requests === 'string' ? JSON.parse(col.requests) : col.requests) : [];
+  reqs.push(reqObj);
+  col.requests = reqs;
+
+  try {
+    const res = await apiFetch('/api/collections', {
+      method: 'PUT',
+      body: JSON.stringify({ id: col.id, requests: reqs })
+    });
+    if (res.ok) {
+      el.addRequestModal.style.display = 'none';
+      loadCollections();
+      showCollectionWorkspace(col);
+    }
+  } catch (err) {
+    console.error('Error saving request to collection:', err);
+  }
+}
+
+// AI Generate Assertions
+async function aiGenerateAssertions() {
+  const method = el.colReqMethod.value;
+  const url = el.colReqUrl.value.trim();
+  const body = el.colReqBody.value.trim();
+
+  if (!url) {
+    alert('Please enter a request URL first.');
+    return;
+  }
+
+  const originalText = el.btnColAiAssert.textContent;
+  el.btnColAiAssert.textContent = 'Generating...';
+  el.btnColAiAssert.disabled = true;
+
+  try {
+    const prompt = `Analyze this API request and write validation assertions. Return ONLY a JSON object containing: status (boolean - true/false to assert status is 200), maxTimeMs (integer time limit, e.g. 500), checkJson (boolean), checkKey (string - field name to verify exists in response). Request: Method=${method}, URL=${url}, Body=${body}`;
+    const resultText = await callGemini(prompt);
+    
+    // Parse json block from markdown
+    const jsonStr = resultText.replace(/```json/g, '').replace(/```/g, '').trim();
+    const data = JSON.parse(jsonStr);
+
+    el.assertStatus.checked = !!data.status;
+    el.assertTime.checked = !!data.maxTimeMs;
+    el.assertJson.checked = !!data.checkJson;
+    if (data.checkKey) {
+      el.assertKey.checked = true;
+      el.assertKeyName.value = data.checkKey;
+    }
+  } catch (err) {
+    console.error('Error generating AI assertions:', err);
+  } finally {
+    el.btnColAiAssert.textContent = originalText;
+    el.btnColAiAssert.disabled = false;
+  }
+}
+
+// Run Collection sequentially
+async function runCollection() {
+  const col = state.apiCollections.find(c => c.id === state.activeCollectionId);
+  if (!col) return;
+  const reqs = col.requests ? (typeof col.requests === 'string' ? JSON.parse(col.requests) : col.requests) : [];
+  if (reqs.length === 0) return;
+
+  const consoleEl = el.collectionRunnerConsole;
+  consoleEl.innerHTML = '<div class="console-line info">[System] Starting batch runner...</div>';
+  
+  el.runnerStatsBadge.style.display = 'block';
+  el.runnerValPass.textContent = '0';
+  el.runnerValFail.textContent = '0';
+
+  let passed = 0;
+  let failed = 0;
+
+  for (const r of reqs) {
+    const line = document.createElement('div');
+    line.className = 'console-line info';
+    line.textContent = `⚡ Sending ${r.method} ${r.url}...`;
+    consoleEl.appendChild(line);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+
+    const start = performance.now();
+    try {
+      const fetchOpts = { method: r.method };
+      if (r.body && r.method !== 'GET') {
+        fetchOpts.body = r.body;
+        fetchOpts.headers = { 'Content-Type': 'application/json' };
+      }
+
+      const response = await fetch(r.url, fetchOpts);
+      const elapsed = Math.round(performance.now() - start);
+      let responseBody = '';
+      try { responseBody = await response.text(); } catch(e){}
+
+      line.textContent = `🔹 ${r.method} ${r.url} - ${response.status} (${elapsed}ms)`;
+
+      // Assertions check
+      const rAsserts = r.assertions || [];
+      for (const a of rAsserts) {
+        const assertLine = document.createElement('div');
+        if (a.type === 'status_2xx') {
+          if (response.ok) {
+            assertLine.className = 'console-line assertion-pass';
+            assertLine.textContent = `✓ [Pass] Status code is success (${response.status})`;
+            passed++;
+          } else {
+            assertLine.className = 'console-line assertion-fail';
+            assertLine.textContent = `✗ [Fail] Status code is ${response.status} (Expected 2xx)`;
+            failed++;
+          }
+        }
+        else if (a.type === 'response_time') {
+          if (elapsed <= (a.limit || 600)) {
+            assertLine.className = 'console-line assertion-pass';
+            assertLine.textContent = `✓ [Pass] Response time ${elapsed}ms <= ${a.limit || 600}ms`;
+            passed++;
+          } else {
+            assertLine.className = 'console-line assertion-fail';
+            assertLine.textContent = `✗ [Fail] Response time ${elapsed}ms exceeded limit ${a.limit || 600}ms`;
+            failed++;
+          }
+        }
+        else if (a.type === 'valid_json') {
+          try {
+            JSON.parse(responseBody);
+            assertLine.className = 'console-line assertion-pass';
+            assertLine.textContent = `✓ [Pass] Response is valid JSON`;
+            passed++;
+          } catch (e) {
+            assertLine.className = 'console-line assertion-fail';
+            assertLine.textContent = `✗ [Fail] Response body is not valid JSON`;
+            failed++;
+          }
+        }
+        else if (a.type === 'has_key') {
+          try {
+            const parsed = JSON.parse(responseBody);
+            if (parsed && parsed[a.key] !== undefined) {
+              assertLine.className = 'console-line assertion-pass';
+              assertLine.textContent = `✓ [Pass] Body contains key: "${a.key}"`;
+              passed++;
+            } else {
+              assertLine.className = 'console-line assertion-fail';
+              assertLine.textContent = `✗ [Fail] Body missing key: "${a.key}"`;
+              failed++;
+            }
+          } catch(e) {
+            assertLine.className = 'console-line assertion-fail';
+            assertLine.textContent = `✗ [Fail] Body missing key: "${a.key}" (Response not JSON)`;
+            failed++;
+          }
+        }
+        consoleEl.appendChild(assertLine);
+      }
+    } catch (err) {
+      const errLine = document.createElement('div');
+      errLine.className = 'console-line error';
+      errLine.textContent = `✗ [Error] Connection failed: ${err.message}`;
+      consoleEl.appendChild(errLine);
+      failed++;
+    }
+
+    el.runnerValPass.textContent = passed;
+    el.runnerValFail.textContent = failed;
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+
+  const finalLine = document.createElement('div');
+  finalLine.className = failed > 0 ? 'console-line error' : 'console-line success';
+  finalLine.style.fontWeight = 'bold';
+  finalLine.textContent = `[System] Run Complete. Passed: ${passed}, Failed: ${failed}.`;
+  consoleEl.appendChild(finalLine);
+  consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+// 2. Project Sharing / Teammates
+function initProjectSharing() {
+  el.btnAddCollab.addEventListener('click', inviteCollaborator);
+}
+
+async function loadCollaborators() {
+  if (!state.token || !state.projectId) {
+    el.projectSharingPanel.style.display = 'none';
+    return;
+  }
+  try {
+    const res = await apiFetch(`/api/auth/collaborators?projectId=${state.projectId}`);
+    if (res.ok) {
+      const members = await res.json();
+      renderCollaborators(members);
+      el.projectSharingPanel.style.display = 'block';
+    }
+  } catch (err) {
+    console.error('Error loading collaborators:', err);
+  }
+}
+
+function renderCollaborators(members) {
+  el.collabCount.textContent = `${members.length} members`;
+  const container = el.collaboratorsList;
+  container.innerHTML = '';
+
+  members.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'collab-member-row';
+    const init = m.email.charAt(0).toUpperCase();
+    div.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="collab-avatar">${init}</div>
+        <div>
+          <div style="font-weight:600; color: white;">${m.email}</div>
+          <div style="font-size:0.75rem; color: hsl(215, 20%, 55%); text-transform: capitalize;">${m.role}</div>
+        </div>
+      </div>
+      ${m.role !== 'owner' ? `<button class="btn btn-secondary" style="padding: 2px 6px; font-size:0.75rem; color: var(--color-critical); border:none;" onclick="removeTeammate(${m.id})">Remove</button>` : ''}
+    `;
+    container.appendChild(div);
+  });
+}
+
+window.removeTeammate = async function(collaboratorId) {
+  if (!confirm('Are you sure you want to remove this collaborator?')) return;
+  try {
+    const res = await apiFetch(`/api/auth/collaborators?projectId=${state.projectId}&collaboratorId=${collaboratorId}`, {
+      method: 'DELETE'
+    });
+    if (res.ok) {
+      loadCollaborators();
+    }
+  } catch(err) {
+    console.error('Error removing collaborator:', err);
+  }
+};
+
+async function inviteCollaborator() {
+  const email = el.collabEmailInput.value.trim();
+  if (!email) return;
+
+  el.collabErrorMsg.style.display = 'none';
+
+  try {
+    const res = await apiFetch('/api/auth/collaborators', {
+      method: 'POST',
+      body: JSON.stringify({ projectId: parseInt(state.projectId, 10), email })
+    });
+    if (res.ok) {
+      el.collabEmailInput.value = '';
+      loadCollaborators();
+    } else {
+      const data = await res.json();
+      el.collabErrorMsg.textContent = data.error || 'Failed to invite collaborator';
+      el.collabErrorMsg.style.display = 'block';
+    }
+  } catch (err) {
+    console.error('Error inviting collaborator:', err);
+  }
+}
+
+// 3. Export Codebase Bug Scan Results as Markdown
+function initBugsExporter() {
+  el.btnExportBugReport.addEventListener('click', exportBugsMarkdown);
+}
+
+function exportBugsMarkdown() {
+  if (state.bugs.length === 0) return;
+  
+  let md = `# Aegis AI Vulnerability Report\n\n`;
+  md += `**Date:** ${new Date().toLocaleDateString()}\n`;
+  md += `**Project Path:** ${state.projectName || 'Aegis Sandbox'}\n`;
+  md += `**Total Vulnerabilities Scanned:** ${state.bugs.length}\n\n`;
+
+  md += `## Issues Summary\n\n`;
+  md += `| File Name | Bug Type | Severity | Description |\n`;
+  md += `| :--- | :--- | :--- | :--- |\n`;
+
+  state.bugs.forEach(b => {
+    md += `| \`${b.file}\` | \`${b.bug}\` | **${b.severity.toUpperCase()}** | ${b.description} |\n`;
+  });
+
+  md += `\n\n## Technical Details & Refactoring Diffs\n\n`;
+
+  state.bugs.forEach((b, idx) => {
+    md += `### ${idx + 1}. [${b.severity.toUpperCase()}] ${b.bug} in \`${b.file}\`\n\n`;
+    md += `**Vulnerability Description:**\n${b.description}\n\n`;
+    if (b.originalCode) {
+      md += `**Refactoring Recommendation:**\n`;
+      md += `\`\`\`diff\n`;
+      md += `- ${b.originalCode.split('\n').join('\n- ')}\n`;
+      if (b.fixedCode) {
+        md += `+ ${b.fixedCode.split('\n').join('\n+ ')}\n`;
+      }
+      md += `\`\`\`\n\n`;
+    }
+  });
+
+  downloadFile(`${state.projectName || 'aegis'}_vulnerability_report.md`, md, 'text/markdown');
+}
+
+// 4. Interactive Guided Tour Onboarding with Demo Sandbox Pre-Loading
+const tourSteps = [
+  {
+    elementId: 'folder-picker-panel',
+    title: '📂 Load Your Project Directory',
+    text: 'Click here to choose any local code folder. The HTML5 File System API analyzes folders offline without uploading code to any cloud servers!'
+  },
+  {
+    elementId: 'settings-nav-item',
+    title: '⚙️ Configure Gemini AI',
+    text: 'Click Settings to paste your Gemini API Key. Aegis uses Gemini 2.5 Flash to automatically refactor code, generate manual QA scenarios, and audit web pages.'
+  },
+  {
+    elementId: 'test-cases-nav-item',
+    title: '📋 Manage Test Scenarios',
+    text: 'Write manual QA criteria or enter a User Story, and watch Aegis generate full step-by-step manual test scripts instantly.'
+  },
+  {
+    elementId: 'api-tester-nav-item',
+    title: '⚡ API & Automation Collections',
+    text: 'Construct raw API calls, check headers, run batch requests in sequence, and let Gemini audit your API endpoints for potential validation leaks.'
+  },
+  {
+    elementId: 'performance-nav-item',
+    title: '🚀 Performance & Accessibility Audits',
+    text: 'Paste HTML code or audit URLs to check for PageSpeed metrics, SEO optimization advice, and WCAG accessibility guidelines!'
+  }
+];
+
+function initGuidedTour() {
+  el.btnTourSkip.addEventListener('click', () => { el.tourOverlay.style.display = 'none'; });
+  el.btnTourPrev.addEventListener('click', () => { navigateTour(-1); });
+  el.btnTourNext.addEventListener('click', () => { navigateTour(1); });
+
+  // Trigger tour on first signup
+  if (!localStorage.getItem('aegis_tour_completed')) {
+    setTimeout(startGuidedTour, 1500);
+  }
+}
+
+function startGuidedTour() {
+  state.tourStep = 0;
+  el.tourOverlay.style.display = 'flex';
+  loadSandboxDemoData(); // Pre-load demo sandbox files so they can explore instantly!
+  showTourStep();
+}
+
+function showTourStep() {
+  document.querySelectorAll('.tour-highlight').forEach(x => x.classList.remove('tour-highlight'));
+  
+  const step = tourSteps[state.tourStep];
+  el.tourStepIndicator.textContent = `Step ${state.tourStep + 1} of ${tourSteps.length}`;
+  el.tourTitle.textContent = step.title;
+  el.tourText.textContent = step.text;
+
+  // Highlight step target
+  let targetId = step.elementId;
+  
+  if (targetId.endsWith('-nav-item')) {
+    const viewName = targetId.replace('-nav-item', '');
+    const navEl = document.querySelector(`.nav-item[data-view="${viewName}"]`);
+    if (navEl) {
+      navEl.classList.add('tour-highlight');
+    }
+  } else {
+    const targetEl = document.getElementById(targetId);
+    if (targetEl) {
+      targetEl.classList.add('tour-highlight');
+    }
+  }
+
+  el.btnTourPrev.disabled = state.tourStep === 0;
+  el.btnTourNext.textContent = state.tourStep === tourSteps.length - 1 ? 'Finish Tour' : 'Next';
+}
+
+function navigateTour(dir) {
+  state.tourStep += dir;
+  if (state.tourStep < 0) state.tourStep = 0;
+  if (state.tourStep >= tourSteps.length) {
+    el.tourOverlay.style.display = 'none';
+    document.querySelectorAll('.tour-highlight').forEach(x => x.classList.remove('tour-highlight'));
+    localStorage.setItem('aegis_tour_completed', 'true');
+    logConsole('[Tour]', 'Guided onboarding completed successfully. Sandbox mode active.', 'success');
+  } else {
+    showTourStep();
+  }
+}
+
+// Sandbox Demo Data Loader (Zero-config preview)
+function loadSandboxDemoData() {
+  if (Object.keys(state.files).length > 0) return;
+  
+  state.projectName = 'Aegis Sandbox Demo';
+  el.activeProjectName.textContent = state.projectName;
+  el.workspaceBadge.style.display = 'flex';
+  el.btnStartScan.removeAttribute('disabled');
+
+  state.files = {
+    'auth.js': {
+      relativePath: 'auth.js',
+      content: `function loginUser(email, password) {\n  if (password === 'admin123') {\n    return { success: true, token: 'mock-jwt-token' };\n  }\n  return { success: false };\n}`
+    },
+    'utils.js': {
+      relativePath: 'utils.js',
+      content: `function formatPrice(amount) {\n  return '$' + amount.toFixed(2);\n}`
+    }
+  };
+
+  renderFileTree();
+  
+  state.bugs = [
+    {
+      id: 1,
+      file: 'auth.js',
+      line: 2,
+      bug: 'hardcoded_credential',
+      severity: 'critical',
+      description: 'Hardcoded admin password found: admin123. This is a severe security vulnerability that must be extracted to environment configurations.',
+      originalCode: `if (password === 'admin123') {`,
+      fixedCode: `if (password === process.env.ADMIN_PASSWORD) {`
+    }
+  ];
+
+  renderBugsList();
+  el.btnExportBugReport.style.display = 'inline-block';
+}

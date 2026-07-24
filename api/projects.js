@@ -16,7 +16,14 @@ module.exports = async (req, res) => {
 
   try {
     if (req.method === 'GET') {
-      const result = await sql`SELECT * FROM projects WHERE user_id = ${userId} ORDER BY created_at DESC`;
+      const result = await sql`
+        SELECT p.*, u.email as owner_email 
+        FROM projects p 
+        JOIN users u ON p.user_id = u.id 
+        WHERE p.user_id = ${userId} 
+           OR p.id IN (SELECT project_id FROM project_members WHERE user_id = ${userId}) 
+        ORDER BY p.created_at DESC
+      `;
       return res.status(200).json(result.rows);
     } 
     

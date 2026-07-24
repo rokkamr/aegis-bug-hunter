@@ -2077,3 +2077,117 @@ body {
   }
 }
 
+/* ============================================================
+   ADVANCED B2B AUTOMATION FEATURES STYLING
+   ============================================================ */
+
+/* Collections List Folder Cards */
+.collection-folder-card {
+  background: hsla(215, 25%, 12%, 0.4);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.collection-folder-card:hover, .collection-folder-card.active {
+  background: hsla(217, 91%, 60%, 0.08);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.15);
+}
+
+.collection-folder-icon {
+  font-size: 1.5rem;
+  color: #fbbf24;
+}
+
+/* Endpoint Row in Collection Panel */
+.collection-endpoint-row {
+  background: hsla(222, 47%, 4%, 0.6);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.collection-endpoint-row:hover {
+  border-color: hsl(215, 20%, 45%);
+}
+
+.endpoint-method {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Teammate/Collaborator Avatars & Rows */
+.collab-member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: hsla(222, 47%, 4%, 0.5);
+  border: 1px solid var(--border-color);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.collab-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.75rem;
+}
+
+/* Onboarding Guided Tour Popup & Pulse highlights */
+#tour-overlay {
+  animation: fadeIn 0.2s ease forwards;
+}
+
+#tour-card {
+  position: relative;
+  animation: tourSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes tourSlideUp {
+  from { transform: scale(0.9) translateY(10px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.tour-highlight {
+  position: relative;
+  z-index: 10001 !important;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6), 0 0 15px var(--color-primary) !important;
+  outline: 2px solid var(--color-primary) !important;
+  pointer-events: none;
+}
+
+/* Run Log Console colors */
+.console-line.assertion-pass {
+  color: hsl(142, 70%, 45%);
+  padding-left: 12px;
+  border-left: 2px solid hsl(142, 70%, 45%);
+}
+
+.console-line.assertion-fail {
+  color: var(--color-critical);
+  padding-left: 12px;
+  border-left: 2px solid var(--color-critical);
+}
+
+
