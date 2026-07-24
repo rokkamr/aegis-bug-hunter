@@ -1286,6 +1286,28 @@ el.chatUserInput.addEventListener('keydown', (e) => {
 
 // Check if Edge debugging port 9222 is alive
 async function checkBrowserConnection() {
+  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    state.isBrowserConnected = false;
+    if (el.browserStatusDot) el.browserStatusDot.className = 'status-dot';
+    if (el.browserStatusText) el.browserStatusText.textContent = 'Local Mode Required';
+    
+    if (el.webDisconnectedAlert) {
+      el.webDisconnectedAlert.innerHTML = `
+        <h3 style="color: white; font-size: 1.1rem; font-weight: 600;">🖥️ Local Desktop Connection Required</h3>
+        <p style="margin-top: 12px; font-size: 0.88rem; line-height: 1.5; color: hsl(215, 20%, 70%);">
+          The E2E Web Tester requires Microsoft Edge running locally on your workstation to interact with pages. To run audits:
+          <br><br>
+          1. Run the Aegis host locally using <code>./server.ps1</code>.
+          <br>
+          2. Launch Microsoft Edge in debug mode using <code>./start_edge.ps1</code>.
+        </p>
+      `;
+      el.webDisconnectedAlert.style.display = 'block';
+    }
+    if (el.webTesterWorkspace) el.webTesterWorkspace.style.display = 'none';
+    return;
+  }
+
   try {
     const res = await fetch('/browser-api/json/list', {
       method: 'GET'
