@@ -4031,3 +4031,42 @@ function loadSandboxDemoData() {
   renderBugsList();
   el.btnExportBugReport.style.display = 'inline-block';
 }
+
+// Interactive 3D Spatial Mouse Tilt Physics Engine
+function init3DTiltEffect() {
+  const tiltSelectors = '.glass-panel, .stat-card, .test-case-card, .perf-score-card, .a11y-issue-card, .collection-folder-card';
+
+  document.addEventListener('mousemove', (e) => {
+    const targetCard = e.target.closest(tiltSelectors);
+    if (!targetCard) return;
+
+    const rect = targetCard.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    const deltaX = (e.clientX - centerX) / (rect.width / 2);
+    const deltaY = (e.clientY - centerY) / (rect.height / 2);
+
+    // Limit maximum tilt angle to 8 degrees for clean spatial feel
+    const rotateX = (-deltaY * 7).toFixed(2);
+    const rotateY = (deltaX * 7).toFixed(2);
+
+    targetCard.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-4px) scale(1.01)`;
+    targetCard.style.boxShadow = `var(--shadow-3d-panel-hover), ${-rotateY * 2}px ${rotateX * 2}px 25px rgba(0, 0, 0, 0.6)`;
+  });
+
+  document.addEventListener('mouseout', (e) => {
+    const targetCard = e.target.closest(tiltSelectors);
+    if (targetCard && (!e.relatedTarget || !targetCard.contains(e.relatedTarget))) {
+      targetCard.style.transform = '';
+      targetCard.style.boxShadow = '';
+    }
+  });
+}
+
+// Initialize 3D Tilt system on document load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init3DTiltEffect);
+} else {
+  init3DTiltEffect();
+}
