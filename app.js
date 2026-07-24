@@ -1407,54 +1407,61 @@ el.btnCopyTest.addEventListener('click', () => {
   alert("Test code copied to clipboard!");
 });
 
-// Save Test Code to local directory
-el.btnSaveTest.addEventListener('click', async () => {
-  if (!state.testWriterSelectedFile) return;
-  
-  try {
-    const parts = state.testWriterSelectedFile.split('/');
-    const originalName = parts.pop();
-    const nameParts = originalName.split('.');
-    const ext = nameParts.pop();
-    const base = nameParts.join('.');
+// Save Test Code to local directory or download
+if (el.btnSaveTest) {
+  el.btnSaveTest.addEventListener('click', async () => {
+    if (!state.testWriterSelectedFile) return;
+    const codeContent = el.testCodeBlock ? el.testCodeBlock.textContent : '';
+    if (!codeContent) return;
     
-    let testFileName = '';
-    if (ext === 'py') {
-      testFileName = `test_${base}.${ext}`;
-    } else if (['js', 'jsx', 'ts', 'tsx'].includes(ext)) {
-      testFileName = `${base}.test.${ext}`;
-    } else {
-      testFileName = `${base}Test.${ext}`;
-    }
-    
-    logConsole(`Requesting to save test file: ${testFileName}...`, 'info');
-    
-    let targetHandle;
     try {
-      let currentDir = state.directoryHandle;
-      for (let i = 0; i < parts.length; i++) {
-        currentDir = await currentDir.getDirectoryHandle(parts[i]);
+      const parts = state.testWriterSelectedFile.split('/');
+      const originalName = parts.pop();
+      const nameParts = originalName.split('.');
+      const ext = nameParts.pop();
+      const base = nameParts.join('.');
+      
+      let testFileName = '';
+      if (ext === 'py') {
+        testFileName = `test_${base}.${ext}`;
+      } else if (['js', 'jsx', 'ts', 'tsx'].includes(ext)) {
+        testFileName = `${base}.test.${ext}`;
+      } else {
+        testFileName = `${base}Test.${ext}`;
       }
-      targetHandle = await currentDir.getFileHandle(testFileName, { create: true });
-    } catch (e) {
-      logConsole("Could not locate parent subdirectory. Saving to project root...", "warn");
-      targetHandle = await state.directoryHandle.getFileHandle(testFileName, { create: true });
+      
+      if (state.directoryHandle && typeof state.directoryHandle.getFileHandle === 'function') {
+        logConsole(`Requesting to save test file: ${testFileName}...`, 'info');
+        let targetHandle;
+        try {
+          let currentDir = state.directoryHandle;
+          for (let i = 0; i < parts.length; i++) {
+            currentDir = await currentDir.getDirectoryHandle(parts[i]);
+          }
+          targetHandle = await currentDir.getFileHandle(testFileName, { create: true });
+        } catch (e) {
+          targetHandle = await state.directoryHandle.getFileHandle(testFileName, { create: true });
+        }
+        
+        const writable = await targetHandle.createWritable();
+        await writable.write(codeContent);
+        await writable.close();
+        
+        logConsole(`Saved test file successfully as ${testFileName}`, 'success');
+        alert(`File saved successfully as: ${testFileName}`);
+        await scanProjectDirectory();
+      } else {
+        // Cloud / Browser Fallback: Automatic Download
+        downloadFile(testFileName, codeContent, 'text/plain');
+        logConsole(`Downloaded test file as ${testFileName}`, 'success');
+      }
+      
+    } catch (err) {
+      logConsole(`Could not save test file: ${err.message}`, 'error');
+      downloadFile('unit-test-suite.txt', el.testCodeBlock.textContent, 'text/plain');
     }
-    
-    const writable = await targetHandle.createWritable();
-    await writable.write(el.testCodeBlock.textContent);
-    await writable.close();
-    
-    logConsole(`Saved test file successfully as ${testFileName}`, 'success');
-    alert(`File saved successfully as: ${testFileName}`);
-    
-    await scanProjectDirectory();
-    
-  } catch (err) {
-    logConsole(`Could not save test file: ${err.message}`, 'error');
-    alert(`Error saving test file: ${err.message}`);
-  }
-});
+  });
+}
 
 // Code Chat Files Context rendering
 function renderChatFiles() {
