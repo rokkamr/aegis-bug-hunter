@@ -6,7 +6,7 @@ const state = {
   userEmail: localStorage.getItem('aegis_user_email') || '',
   projectId: localStorage.getItem('aegis_project_id') || '',
   apiKey: localStorage.getItem('aegis_api_key') || '',
-  model: localStorage.getItem('aegis_model') || 'gemini-2.5-flash',
+  model: localStorage.getItem('aegis_model') || 'gemini-1.5-flash',
   directoryHandle: null,
   projectName: '',
   files: {}, // Flat object: relativePath -> FileEntry { file, relativePath, handle, content: null }
