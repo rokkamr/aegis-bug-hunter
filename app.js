@@ -6,7 +6,13 @@ const state = {
   userEmail: localStorage.getItem('aegis_user_email') || '',
   projectId: localStorage.getItem('aegis_project_id') || '',
   apiKey: localStorage.getItem('aegis_api_key') || '',
-  model: localStorage.getItem('aegis_model') || 'gemini-1.5-flash',
+  model: (() => {
+    let m = localStorage.getItem('aegis_model') || 'gemini-1.5-flash';
+    // Auto-migrate deprecated model names
+    const deprecated = { 'gemini-2.5-flash': 'gemini-2.0-flash', 'gemini-2.5-pro': 'gemini-2.0-flash' };
+    if (deprecated[m]) { m = deprecated[m]; localStorage.setItem('aegis_model', m); }
+    return m;
+  })(),
   directoryHandle: null,
   projectName: '',
   files: {}, // Flat object: relativePath -> FileEntry { file, relativePath, handle, content: null }
