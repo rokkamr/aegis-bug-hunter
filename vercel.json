@@ -1,15 +1,5 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "index.html",
-      "use": "@vercel/static"
-    }
-  ],
   "routes": [
     {
       "src": "/api/auth/signup",
@@ -18,6 +8,10 @@
     {
       "src": "/api/auth/login",
       "dest": "/api/auth/login.js"
+    },
+    {
+      "src": "/api/auth/collaborators",
+      "dest": "/api/auth/collaborators.js"
     },
     {
       "src": "/api/projects",
@@ -30,6 +24,10 @@
     {
       "src": "/api/bugs",
       "dest": "/api/bugs.js"
+    },
+    {
+      "src": "/api/collections",
+      "dest": "/api/collections.js"
     },
     {
       "src": "/(.*)",
