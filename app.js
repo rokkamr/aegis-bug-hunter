@@ -4819,8 +4819,110 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     init3DTiltEffect();
     initTestWriterControls();
+    initMobileNav();
   });
 } else {
   init3DTiltEffect();
   initTestWriterControls();
+  initMobileNav();
+}
+
+
+// ============================================================
+// MOBILE PWA NAVIGATION
+// ============================================================
+function initMobileNav() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('mobile-sidebar-overlay');
+  const hamburger = document.getElementById('btn-hamburger');
+  const bottomNav = document.getElementById('mobile-bottom-nav');
+
+  if (!sidebar || !hamburger) return;
+
+  // --- Hamburger: toggle sidebar open/close ---
+  hamburger.addEventListener('click', () => {
+    toggleMobileSidebar();
+  });
+
+  // --- Overlay: close sidebar ---
+  if (overlay) {
+    overlay.addEventListener('click', () => {
+      closeMobileSidebar();
+    });
+  }
+
+  // --- Sidebar nav items: close sidebar on click (mobile) ---
+  const sidebarNavItems = sidebar.querySelectorAll('.nav-item');
+  sidebarNavItems.forEach(item => {
+    item.addEventListener('click', () => {
+      if (window.innerWidth <= 768) {
+        closeMobileSidebar();
+      }
+    });
+  });
+
+  // --- Bottom nav items: switch view ---
+  if (bottomNav) {
+    const bottomNavItems = bottomNav.querySelectorAll('.mobile-nav-item');
+    bottomNavItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const viewName = item.getAttribute('data-view');
+        if (viewName && typeof switchView === 'function') {
+          switchView(viewName);
+        }
+        // Update active state on bottom nav
+        bottomNavItems.forEach(n => n.classList.remove('active'));
+        item.classList.add('active');
+      });
+    });
+  }
+
+  // --- Sync bottom nav active state whenever switchView is called ---
+  const origSwitchView = window.switchView || (typeof switchView !== 'undefined' ? switchView : null);
+  if (origSwitchView) {
+    // Patch switchView to sync bottom nav
+    const origFn = origSwitchView;
+    // We can't easily reassign a function declaration, so we hook into the DOM update
+    // Instead, use a MutationObserver on page-title to detect view changes
+    const pageTitle = document.getElementById('page-title');
+    if (pageTitle && bottomNav) {
+      const observer = new MutationObserver(() => {
+        const activeView = state?.activeView || '';
+        const bottomNavItems = bottomNav.querySelectorAll('.mobile-nav-item');
+        bottomNavItems.forEach(n => {
+          if (n.getAttribute('data-view') === activeView) {
+            n.classList.add('active');
+          } else {
+            n.classList.remove('active');
+          }
+        });
+      });
+      observer.observe(pageTitle, { childList: true, characterData: true, subtree: true });
+    }
+  }
+}
+
+function toggleMobileSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('mobile-sidebar-overlay');
+  if (!sidebar) return;
+
+  const isOpen = sidebar.classList.contains('mobile-open');
+  if (isOpen) {
+    closeMobileSidebar();
+  } else {
+    sidebar.classList.add('mobile-open');
+    if (overlay) overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeMobileSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('mobile-sidebar-overlay');
+  if (!sidebar) return;
+
+  sidebar.classList.remove('mobile-open');
+  if (overlay) overlay.classList.remove('active');
+  document.body.style.overflow = '';
 }
