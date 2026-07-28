@@ -3912,10 +3912,10 @@ function initAuth() {
     });
   }
 
-  const btnContinueGuest = document.getElementById('btn-continue-guest');
-  if (btnContinueGuest) {
-    btnContinueGuest.addEventListener('click', () => {
-      if (el.authOverlay) el.authOverlay.style.display = 'none';
+  const btnOpenLogin = document.getElementById('btn-open-login');
+  if (btnOpenLogin) {
+    btnOpenLogin.addEventListener('click', () => {
+      if (el.authOverlay) el.authOverlay.style.display = 'flex';
     });
   }
 
@@ -4092,10 +4092,6 @@ function handleLogout() {
   if (el.projectSharingPanel) el.projectSharingPanel.style.display = 'none';
   if (el.collectionRunnerPanel) el.collectionRunnerPanel.style.display = 'none';
   checkAdminAccess();
-  updateAuthState();
-  logConsole('[Auth]', 'Logged out successfully', 'info');
-}
-
   updateAuthState();
   logConsole('[Auth]', 'Logged out successfully', 'info');
 }

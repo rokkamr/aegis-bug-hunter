@@ -95,19 +95,22 @@
       </div>
       
       <div class="sidebar-footer">
-        <div id="user-profile-section" style="display: none; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 12px; width: 100%;">
+        <div id="user-profile-section" style="display: block; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 12px; width: 100%;">
           <div style="display: flex; align-items: center; gap: 8px; justify-content: space-between; width: 100%;">
             <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; flex: 1;">
-              <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--color-primary), var(--color-accent)); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem; flex-shrink: 0; color: #fff; box-shadow: inset 0 1px 1px rgba(255,255,255,0.4);" id="user-avatar">U</div>
+              <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--color-primary), var(--color-accent)); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem; flex-shrink: 0; color: #fff; box-shadow: inset 0 1px 1px rgba(255,255,255,0.4);" id="user-avatar">G</div>
               <div style="display: flex; flex-direction: column; overflow: hidden; flex: 1;">
                 <div style="display: flex; align-items: center; gap: 4px;">
-                  <span id="user-fullname-display" style="font-size: 0.82rem; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">User Name</span>
+                  <span id="user-fullname-display" style="font-size: 0.82rem; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Guest Developer</span>
                   <span id="user-country-badge" style="font-size: 0.65rem; background: hsla(217, 91%, 60%, 0.2); color: var(--color-primary); padding: 1px 4px; border-radius: 4px; font-weight: 600; display: none;">US</span>
                 </div>
-                <span id="user-email-display" style="font-size: 0.72rem; color: hsl(215, 20%, 65%); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">user@aegis.com</span>
+                <span id="user-email-display" style="font-size: 0.72rem; color: hsl(215, 20%, 65%); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">guest@aegis.com</span>
               </div>
             </div>
-            <button id="btn-logout" style="background: transparent; border: none; color: var(--color-critical); cursor: pointer; font-size: 0.75rem; font-weight: 600; padding: 4px; flex-shrink: 0;">Logout</button>
+            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+              <button id="btn-open-login" style="background: hsla(217, 91%, 60%, 0.15); border: 1px solid hsla(217, 91%, 60%, 0.3); color: var(--color-primary); cursor: pointer; font-size: 0.72rem; font-weight: 600; padding: 4px 8px; border-radius: 6px;">Sign In</button>
+              <button id="btn-logout" style="background: transparent; border: none; color: var(--color-critical); cursor: pointer; font-size: 0.72rem; font-weight: 600; padding: 4px;">Logout</button>
+            </div>
           </div>
         </div>
         
