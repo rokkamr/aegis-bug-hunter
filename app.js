@@ -201,6 +201,8 @@ const el = {
   apiMethodSelect: document.getElementById('api-method-select'),
   apiUrlInput: document.getElementById('api-url-input'),
   btnSendApi: document.getElementById('btn-send-api'),
+  apiDemoPreset: document.getElementById('api-demo-preset'),
+  btnCopyResponse: document.getElementById('btn-copy-response'),
   apiHeadersContainer: document.getElementById('api-headers-container'),
   btnAddHeader: document.getElementById('btn-add-header'),
   apiAuthType: document.getElementById('api-auth-type'),
@@ -2823,12 +2825,22 @@ async function sendApiRequest() {
   if (!el.apiMethodSelect || !el.apiUrlInput) return;
 
   const method = el.apiMethodSelect.value || 'GET';
-  const url = el.apiUrlInput.value.trim();
+  let url = el.apiUrlInput.value.trim();
 
   if (!url) {
     alert('Please enter a request URL.');
     return;
   }
+
+  // Auto-resolve relative paths (/api/auth/login -> origin + /api/auth/login)
+  if (url.startsWith('/')) {
+    url = window.location.origin + url;
+  } else if (!/^https?:\/\//i.test(url)) {
+    url = 'https://' + url;
+  }
+
+  // Reflect clean URL back to input field
+  el.apiUrlInput.value = url;
 
   // Collect headers from rows
   const headers = {};
@@ -3123,6 +3135,53 @@ function initApiTester() {
   // Send request button
   if (el.btnSendApi) {
     el.btnSendApi.addEventListener('click', sendApiRequest);
+  }
+
+  // Demo Preset Selector
+  if (el.apiDemoPreset) {
+    el.apiDemoPreset.addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (!val) return;
+
+      if (val === 'json-get') {
+        if (el.apiMethodSelect) el.apiMethodSelect.value = 'GET';
+        if (el.apiUrlInput) el.apiUrlInput.value = 'https://jsonplaceholder.typicode.com/posts/1';
+      } else if (val === 'json-post') {
+        if (el.apiMethodSelect) el.apiMethodSelect.value = 'POST';
+        if (el.apiUrlInput) el.apiUrlInput.value = 'https://jsonplaceholder.typicode.com/posts';
+        if (el.apiBodyEditor) el.apiBodyEditor.value = JSON.stringify({ title: 'Aegis AI Post', body: 'Automated API audit payload', userId: 1 }, null, 2);
+        const bodyTab = document.querySelector('.api-tab[data-api-tab="body"]');
+        if (bodyTab) bodyTab.click();
+      } else if (val === 'reqres-users') {
+        if (el.apiMethodSelect) el.apiMethodSelect.value = 'GET';
+        if (el.apiUrlInput) el.apiUrlInput.value = 'https://reqres.in/api/users?page=1';
+      } else if (val === 'local-auth') {
+        if (el.apiMethodSelect) el.apiMethodSelect.value = 'POST';
+        if (el.apiUrlInput) el.apiUrlInput.value = '/api/auth/login';
+        if (el.apiBodyEditor) el.apiBodyEditor.value = JSON.stringify({ email: 'test@example.com', password: 'password123' }, null, 2);
+        const bodyTab = document.querySelector('.api-tab[data-api-tab="body"]');
+        if (bodyTab) bodyTab.click();
+      } else if (val === 'local-bugs') {
+        if (el.apiMethodSelect) el.apiMethodSelect.value = 'GET';
+        if (el.apiUrlInput) el.apiUrlInput.value = '/api/bugs';
+      }
+
+      logConsole(`[API Tester] Loaded demo preset request: ${val}`, 'info');
+      e.target.value = ''; // Reset dropdown
+    });
+  }
+
+  // Copy Response Body button
+  if (el.btnCopyResponse) {
+    el.btnCopyResponse.addEventListener('click', () => {
+      const text = el.apiResponseBody ? el.apiResponseBody.textContent : '';
+      if (text && text !== 'Click "Send" to execute request and inspect HTTP response.') {
+        navigator.clipboard.writeText(text);
+        alert('Response body copied to clipboard!');
+      } else {
+        alert('No response body available to copy.');
+      }
+    });
   }
 
   // Add header row button
