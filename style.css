@@ -2569,15 +2569,36 @@ body {
     box-shadow: 10px 0 40px rgba(0, 0, 0, 0.7);
   }
 
-  /* === Main content: full width === */
+  /* === Viewport & Container Height fixes for Mobile & WebViews === */
+  html, body {
+    height: 100% !important;
+    min-height: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
   .app-container {
-    flex-direction: column;
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 100% !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
   }
 
   .main-content {
     width: 100% !important;
+    height: auto !important;
+    min-height: 100vh !important;
     margin-left: 0 !important;
-    padding-bottom: 72px; /* space for bottom nav */
+    padding-bottom: 80px !important; /* space for bottom nav */
+    overflow: visible !important;
+  }
+
+  .views-container {
+    height: auto !important;
+    overflow: visible !important;
+    padding: 16px 12px !important;
   }
 
   /* === Top Bar adjustments === */
