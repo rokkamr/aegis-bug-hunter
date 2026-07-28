@@ -3611,11 +3611,10 @@ async function handleAuthSubmit() {
       return;
     }
     
-    // Phone Number Strict Numeric Validation
+    // Phone Number Strict 10-Digit Validation
     const digitCount = (phone.match(/\d/g) || []).length;
-    const isPhoneValid = /^\+?[0-9\s\-\(\)]{7,20}$/.test(phone) && digitCount >= 7 && digitCount <= 15;
-    if (!isPhoneValid) {
-      showAuthError('Phone number must contain numbers only (7 to 15 digits, e.g. +15550001234)');
+    if (digitCount !== 10) {
+      showAuthError('Phone number must contain exactly 10 digits (e.g. 9876543210)');
       return;
     }
 

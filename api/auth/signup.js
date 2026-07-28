@@ -31,7 +31,7 @@ module.exports = async (req, res) => {
     // Check if user already exists
     const existingUser = await sql`SELECT id FROM users WHERE email = ${emailLower}`;
     if (existingUser.rowCount > 0) {
-      return res.status(400).json({ error: 'User with this email already exists' });
+      return res.status(400).json({ error: 'This email ID already exists' });
     }
 
     // Hash password
