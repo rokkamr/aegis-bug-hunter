@@ -381,19 +381,24 @@ function initProfileSettings() {
 // Check Admin Access & Toggle Visibility of Admin Settings Card
 function checkAdminAccess() {
   const user = state.currentUser || JSON.parse(localStorage.getItem('aegis_current_user') || 'null');
-  const isAdmin = (user && (user.role === 'Admin' || user.email === 'admin@aegis.com')) || localStorage.getItem('aegis_admin_mode') === 'true';
+  const userRole = state.userRole || (user ? user.role : '');
+  const userEmail = state.userEmail || (user ? user.email : '');
+  
+  const isAdmin = userRole === 'Admin' || userEmail === 'admin@aegis.com' || localStorage.getItem('aegis_admin_mode') === 'true';
 
+  // Admin settings card ONLY visible for Admin role or admin@aegis.com
   if (el.adminSettingsCard) {
     el.adminSettingsCard.style.display = isAdmin ? 'block' : 'none';
   }
 
+  // Toggle button ONLY visible for Admin user or when admin mode active
   if (el.btnToggleAdminView) {
     if (isAdmin) {
+      el.btnToggleAdminView.style.display = 'flex';
       if (el.adminToggleIcon) el.adminToggleIcon.textContent = '🟢';
       if (el.adminToggleLabel) el.adminToggleLabel.textContent = 'Admin Active';
     } else {
-      if (el.adminToggleIcon) el.adminToggleIcon.textContent = '🔐';
-      if (el.adminToggleLabel) el.adminToggleLabel.textContent = 'Admin Settings';
+      el.btnToggleAdminView.style.display = 'none'; // Completely hidden for normal users
     }
   }
 }
@@ -4060,6 +4065,7 @@ function handleLogout() {
   state.userCompany = '';
   state.userRole = '';
   state.projectId = '';
+  state.currentUser = null;
   state.activeCollectionId = null;
 
   localStorage.removeItem('aegis_token');
@@ -4070,9 +4076,15 @@ function handleLogout() {
   localStorage.removeItem('aegis_user_company');
   localStorage.removeItem('aegis_user_role');
   localStorage.removeItem('aegis_project_id');
+  localStorage.removeItem('aegis_current_user');
+  localStorage.removeItem('aegis_admin_mode');
 
   if (el.projectSharingPanel) el.projectSharingPanel.style.display = 'none';
   if (el.collectionRunnerPanel) el.collectionRunnerPanel.style.display = 'none';
+  checkAdminAccess();
+  updateAuthState();
+  logConsole('[Auth]', 'Logged out successfully', 'info');
+}
 
   updateAuthState();
   logConsole('[Auth]', 'Logged out successfully', 'info');
