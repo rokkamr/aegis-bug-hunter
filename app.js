@@ -2,13 +2,13 @@
 
 // State Management
 const state = {
-  token: localStorage.getItem('aegis_token') || '',
-  userEmail: localStorage.getItem('aegis_user_email') || '',
-  userFullName: localStorage.getItem('aegis_user_fullname') || '',
+  token: localStorage.getItem('aegis_token') || 'guest_token',
+  userEmail: localStorage.getItem('aegis_user_email') || 'guest@aegis.com',
+  userFullName: localStorage.getItem('aegis_user_fullname') || 'Guest Developer',
   userPhone: localStorage.getItem('aegis_user_phone') || '',
   userCountry: localStorage.getItem('aegis_user_country') || '',
   userCompany: localStorage.getItem('aegis_user_company') || '',
-  userRole: localStorage.getItem('aegis_user_role') || '',
+  userRole: localStorage.getItem('aegis_user_role') || 'Guest',
   projectId: localStorage.getItem('aegis_project_id') || '',
   apiKey: (() => {
     let k = localStorage.getItem('aegis_api_key') || '';
@@ -3905,40 +3905,50 @@ function initAuth() {
     el.btnLogout.addEventListener('click', handleLogout);
   }
 
+  const btnCloseAuth = document.getElementById('btn-close-auth-modal');
+  if (btnCloseAuth) {
+    btnCloseAuth.addEventListener('click', () => {
+      if (el.authOverlay) el.authOverlay.style.display = 'none';
+    });
+  }
+
+  const btnContinueGuest = document.getElementById('btn-continue-guest');
+  if (btnContinueGuest) {
+    btnContinueGuest.addEventListener('click', () => {
+      if (el.authOverlay) el.authOverlay.style.display = 'none';
+    });
+  }
+
   updateAuthState();
 }
 
 function updateAuthState() {
-  if (state.token) {
-    if (el.authOverlay) el.authOverlay.style.display = 'none';
-    if (el.userProfileSection) el.userProfileSection.style.display = 'block';
-    if (el.userEmailDisplay) el.userEmailDisplay.textContent = state.userEmail;
-    
-    // Render Full Name & Country Badge
-    const displayName = state.userFullName || state.userEmail.split('@')[0];
-    if (el.userFullnameDisplay) el.userFullnameDisplay.textContent = displayName;
-    
-    if (el.userAvatar) {
-      const initial = displayName.charAt(0).toUpperCase();
-      el.userAvatar.textContent = initial;
-    }
-
-    if (el.userCountryBadge) {
-      if (state.userCountry) {
-        el.userCountryBadge.textContent = state.userCountry.substring(0, 2).toUpperCase();
-        el.userCountryBadge.title = state.userCountry;
-        el.userCountryBadge.style.display = 'inline-block';
-      } else {
-        el.userCountryBadge.style.display = 'none';
-      }
-    }
-    
-    // Auto-reload test cases from DB
-    syncTestCasesFromDb();
-  } else {
-    if (el.authOverlay) el.authOverlay.style.display = 'flex';
-    if (el.userProfileSection) el.userProfileSection.style.display = 'none';
+  // Always dismiss overlay so visitors can use the website interactively!
+  if (el.authOverlay) el.authOverlay.style.display = 'none';
+  if (el.userProfileSection) el.userProfileSection.style.display = 'block';
+  if (el.userEmailDisplay) el.userEmailDisplay.textContent = state.userEmail || 'guest@aegis.com';
+  
+  // Render Full Name & Country Badge
+  const displayName = state.userFullName || (state.userEmail ? state.userEmail.split('@')[0] : 'Guest Developer');
+  if (el.userFullnameDisplay) el.userFullnameDisplay.textContent = displayName;
+  
+  if (el.userAvatar) {
+    const initial = displayName.charAt(0).toUpperCase();
+    el.userAvatar.textContent = initial;
   }
+
+  if (el.userCountryBadge) {
+    if (state.userCountry) {
+      el.userCountryBadge.textContent = state.userCountry.substring(0, 2).toUpperCase();
+      el.userCountryBadge.title = state.userCountry;
+      el.userCountryBadge.style.display = 'inline-block';
+    } else {
+      el.userCountryBadge.style.display = 'none';
+    }
+  }
+  
+  // Auto-reload test cases from DB
+  syncTestCasesFromDb();
 }
 
 async function handleAuthSubmit() {
@@ -4057,13 +4067,13 @@ async function handleAuthSubmit() {
 }
 
 function handleLogout() {
-  state.token = '';
-  state.userEmail = '';
-  state.userFullName = '';
+  state.token = 'guest_token';
+  state.userEmail = 'guest@aegis.com';
+  state.userFullName = 'Guest Developer';
   state.userPhone = '';
   state.userCountry = '';
   state.userCompany = '';
-  state.userRole = '';
+  state.userRole = 'Guest';
   state.projectId = '';
   state.currentUser = null;
   state.activeCollectionId = null;

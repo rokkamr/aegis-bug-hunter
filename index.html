@@ -1189,9 +1189,10 @@
     </main>
   </div>
 
-  <!-- Authentication Overlay -->
-  <div class="auth-overlay" id="auth-overlay" style="display: flex;">
-    <div class="auth-card glass-panel" style="max-height: 90vh; overflow-y: auto; width: min(480px, 92vw); padding: 32px 28px;">
+  <!-- Authentication Overlay (Hidden by default so visitors can explore freely) -->
+  <div class="auth-overlay" id="auth-overlay" style="display: none; position: fixed; inset: 0; background: rgba(6, 9, 14, 0.85); backdrop-filter: blur(12px); z-index: 10000; align-items: center; justify-content: center;">
+    <div class="auth-card glass-panel" style="max-height: 90vh; overflow-y: auto; width: min(480px, 92vw); padding: 32px 28px; position: relative;">
+      <button id="btn-close-auth-modal" style="position: absolute; top: 16px; right: 16px; background: transparent; border: none; color: hsl(215, 20%, 65%); cursor: pointer; font-size: 1.2rem; font-weight: bold; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;" title="Close Modal">✕</button>
       <div class="brand" style="margin-bottom: 20px; justify-content: center;">
         <div class="brand-icon">
           <svg viewBox="0 0 24 24">
@@ -1272,7 +1273,8 @@
       
       <div id="auth-error-msg" style="color: var(--color-critical); font-size: 0.85rem; margin-bottom: 16px; text-align: center; display: none;"></div>
       
-      <button class="btn btn-primary" id="btn-auth-submit" style="width: 100%; height: 44px; margin-bottom: 16px;">Sign In</button>
+      <button class="btn btn-primary" id="btn-auth-submit" style="width: 100%; height: 44px; margin-bottom: 10px;">Sign In</button>
+      <button class="btn btn-secondary" id="btn-continue-guest" style="width: 100%; height: 40px; margin-bottom: 16px; font-size: 0.85rem; font-weight: 600;">✨ Continue as Guest / Try Demo</button>
       
       <p style="text-align: center; font-size: 0.85rem; color: hsl(215, 20%, 65%);">
         <span id="auth-toggle-text">Don't have an account?</span>
