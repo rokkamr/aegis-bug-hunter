@@ -139,17 +139,13 @@
           </button>
           <h2 class="page-title" id="page-title">Dashboard</h2>
         </div>
-        <div class="workspace-badge" id="workspace-badge" style="display: none;">
-          <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-          <span id="active-project-name">No Project Loaded</span>
-        </div>
       </header>
 
       <div class="views-container">
         
         <!-- DASHBOARD VIEW -->
         <section id="view-dashboard" class="view active">
-          <!-- Quick Start & Mobile Download Banner -->
+          <!-- Quick Start & Banner -->
           <div class="glass-panel" style="margin-bottom: 24px; background: linear-gradient(135deg, hsla(217, 91%, 60%, 0.15), hsla(263, 90%, 65%, 0.1)); border: 1px solid hsla(217, 91%, 60%, 0.3); padding: 20px 24px; position: relative; overflow: hidden; border-radius: 16px;">
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
               <div>
@@ -158,17 +154,13 @@
                   <span style="color: hsl(215, 20%, 65%); font-size: 0.8rem;">• Autonomous AI QA Engine</span>
                 </div>
                 <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 4px; color: #fff;">Welcome to Aegis AI Bug Hunter</h2>
-                <p style="font-size: 0.85rem; color: hsl(215, 20%, 80%); max-width: 620px;">Automated E2E Web Audits, Code Vulnerability Scanning, API Testing, and Android Mobile Apps in one unified platform.</p>
+                <p style="font-size: 0.85rem; color: hsl(215, 20%, 80%); max-width: 620px;">Automated E2E Web Audits, Code Vulnerability Scanning, and API Automation in one unified platform.</p>
               </div>
               <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                 <button class="btn btn-primary" onclick="switchView('web-tester')" style="padding: 10px 16px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
                   Run Web Audit
                 </button>
-                <a href="/aegis-ai.apk" class="btn btn-secondary" style="padding: 10px 16px; font-size: 0.85rem; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 8px; background: hsla(217, 35%, 20%, 0.6); color: #fff;">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  Android APK (11.9MB)
-                </a>
               </div>
             </div>
           </div>
@@ -1460,10 +1452,6 @@
         <div class="cmd-item" onclick="switchView('api-tester'); closeCmdPalette();" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 8px; cursor: pointer; background: hsla(215, 20%, 30%, 0.15);">
           <span style="color: #fff; font-weight: 600; font-size: 0.9rem;">⚡ REST API Automation Studio</span>
           <span style="font-size: 0.75rem; color: hsl(215, 20%, 65%);">Ctrl+Shift+A</span>
-        </div>
-        <div class="cmd-item" onclick="window.location.href='/aegis-ai.apk'; closeCmdPalette();" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 8px; cursor: pointer; background: hsla(217, 91%, 60%, 0.15); border: 1px solid hsla(217, 91%, 60%, 0.3);">
-          <span style="color: #fff; font-weight: 600; font-size: 0.9rem;">📱 Download Android Mobile App (APK)</span>
-          <span style="font-size: 0.75rem; color: var(--color-primary); font-weight: 700;">11.9 MB</span>
         </div>
       </div>
     </div>
