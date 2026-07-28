@@ -350,15 +350,32 @@ function initSettings() {
 
 // Populate Profile Settings
 function initProfileSettings() {
-  const user = state.currentUser || JSON.parse(localStorage.getItem('aegis_current_user') || 'null');
+  let user = state.currentUser || JSON.parse(localStorage.getItem('aegis_current_user') || 'null');
+  
+  if (!user) {
+    const email = localStorage.getItem('aegis_user_email') || state.userEmail || '';
+    if (email) {
+      user = {
+        email,
+        full_name: localStorage.getItem('aegis_user_fullname') || state.userFullName || '',
+        phone: localStorage.getItem('aegis_user_phone') || state.userPhone || '',
+        country: localStorage.getItem('aegis_user_country') || state.userCountry || '',
+        company: localStorage.getItem('aegis_user_company') || state.userCompany || '',
+        role: localStorage.getItem('aegis_user_role') || state.userRole || 'Software Engineer'
+      };
+      state.currentUser = user;
+      localStorage.setItem('aegis_current_user', JSON.stringify(user));
+    }
+  }
+
   if (!user) return;
 
-  if (el.profileFullname) el.profileFullname.value = user.full_name || user.name || '';
-  if (el.profileEmail) el.profileEmail.value = user.email || '';
-  if (el.profilePhone) el.profilePhone.value = user.phone || '';
-  if (el.profileCountry) el.profileCountry.value = user.country || '';
-  if (el.profileCompany) el.profileCompany.value = user.company || '';
-  if (el.profileRole) el.profileRole.value = user.role || 'Software Engineer';
+  if (el.profileFullname) el.profileFullname.value = user.full_name || user.fullName || user.name || state.userFullName || '';
+  if (el.profileEmail) el.profileEmail.value = user.email || state.userEmail || '';
+  if (el.profilePhone) el.profilePhone.value = user.phone || state.userPhone || '';
+  if (el.profileCountry) el.profileCountry.value = user.country || state.userCountry || '';
+  if (el.profileCompany) el.profileCompany.value = user.company || state.userCompany || '';
+  if (el.profileRole) el.profileRole.value = user.role || state.userRole || 'Software Engineer';
 }
 
 // Check Admin Access & Toggle Visibility of Admin Settings Card
@@ -429,6 +446,8 @@ function switchView(viewName) {
     updateTestCaseStats();
   } else if (viewName === 'api-tester') {
     renderApiHistory();
+  } else if (viewName === 'settings') {
+    initSettings();
   }
 }
 
@@ -3865,15 +3884,26 @@ async function handleAuthSubmit() {
 
     // Success — Save Token and User Profile Properties
     state.token = data.token;
-    state.userEmail = data.email;
-    state.userFullName = data.fullName || fullName;
-    state.userPhone = data.phone || phone;
-    state.userCountry = data.country || country;
-    state.userCompany = data.company || company;
-    state.userRole = data.role || role;
+    state.userEmail = data.email || email;
+    state.userFullName = data.fullName || data.full_name || fullName || data.email;
+    state.userPhone = data.phone || phone || '';
+    state.userCountry = data.country || country || '';
+    state.userCompany = data.company || company || '';
+    state.userRole = data.role || role || 'Software Engineer';
+
+    const userObj = {
+      email: state.userEmail,
+      full_name: state.userFullName,
+      phone: state.userPhone,
+      country: state.userCountry,
+      company: state.userCompany,
+      role: state.userRole
+    };
+    state.currentUser = userObj;
 
     localStorage.setItem('aegis_token', data.token);
-    localStorage.setItem('aegis_user_email', data.email);
+    localStorage.setItem('aegis_user_email', state.userEmail);
+    localStorage.setItem('aegis_current_user', JSON.stringify(userObj));
     if (state.userFullName) localStorage.setItem('aegis_user_fullname', state.userFullName);
     if (state.userPhone) localStorage.setItem('aegis_user_phone', state.userPhone);
     if (state.userCountry) localStorage.setItem('aegis_user_country', state.userCountry);
