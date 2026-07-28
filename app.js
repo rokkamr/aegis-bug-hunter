@@ -5079,3 +5079,102 @@ function closeMobileSidebar() {
   if (overlay) overlay.classList.remove('active');
   document.body.style.overflow = '';
 }
+
+// ============================================================
+// EXECUTIVE C-LEVEL & SENIOR DEVELOPER PRODUCTION FEATURES
+// ============================================================
+
+// Executive Summary Report Export
+function exportExecSummary() {
+  const totalBugs = state.bugs ? state.bugs.length : 0;
+  const totalFiles = Object.keys(state.files || {}).length;
+  const healthScore = (el.valHealthScore ? el.valHealthScore.textContent : '100%');
+
+  let summary = `# 🛡️ Aegis AI - Executive Security & QA Summary Report\n\n`;
+  summary += `- **Generated On**: ${new Date().toLocaleString()}\n`;
+  summary += `- **Platform**: Aegis AI Bug Hunter v2.0 Enterprise\n`;
+  summary += `- **Overall Code Health**: ${healthScore}\n`;
+  summary += `- **Analyzed Files**: ${totalFiles}\n`;
+  summary += `- **Identified Vulnerabilities**: ${totalBugs}\n\n`;
+
+  summary += `## 📊 Risk Distribution & Security Posture\n\n`;
+  summary += `| Risk Level | Count | Category |\n`;
+  summary += `|---|---|---|\n`;
+  summary += `| 🔴 **Critical** | ${state.bugs ? state.bugs.filter(b => b.severity === 'Critical').length : 0} | RCE, SQLi, Auth Bypass |\n`;
+  summary += `| 🟠 **High / Warning** | ${state.bugs ? state.bugs.filter(b => b.severity === 'High' || b.severity === 'Warning').length : 0} | XSS, CSRF, Null Pointers |\n`;
+  summary += `| 🔵 **Medium / Info** | ${state.bugs ? state.bugs.filter(b => b.severity === 'Medium' || b.severity === 'Minor').length : 0} | Perf & WCAG Compliance |\n\n`;
+
+  summary += `## 🚀 Key Recommendations\n`;
+  summary += `1. Review and apply AI automated patches for critical severity code vulnerabilities.\n`;
+  summary += `2. Run scheduled E2E Web Audits prior to production release deployments.\n`;
+  summary += `3. Maintain 100% test coverage using the integrated AI Test Suite Generator.\n`;
+
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(summary).then(() => {
+      alert("📊 Executive Summary Report copied to clipboard in Markdown format!");
+    }).catch(() => {
+      downloadFile("Aegis_Executive_Security_Summary.md", summary, "text/markdown");
+    });
+  } else {
+    downloadFile("Aegis_Executive_Security_Summary.md", summary, "text/markdown");
+  }
+}
+
+// Load Sample API Collection in API Tester
+function loadSampleApiCollection() {
+  const sampleCollection = {
+    id: 'col-sample-demo',
+    name: 'JSONPlaceholder Demo APIs',
+    desc: 'Sample REST endpoints for testing API automation',
+    requests: [
+      { name: 'Get Posts List', method: 'GET', url: 'https://jsonplaceholder.typicode.com/posts/1', body: '' },
+      { name: 'Create Post Endpoint', method: 'POST', url: 'https://jsonplaceholder.typicode.com/posts', body: '{\n  "title": "Aegis Audit",\n  "body": "Automated Testing",\n  "userId": 1\n}' },
+      { name: 'Fetch User Profile', method: 'GET', url: 'https://jsonplaceholder.typicode.com/users/1', body: '' }
+    ]
+  };
+
+  const collections = state.apiCollections || [];
+  collections.unshift(sampleCollection);
+  state.apiCollections = collections;
+  localStorage.setItem('aegis_api_collections', JSON.stringify(collections));
+  
+  if (typeof renderCollections === 'function') renderCollections();
+  alert("✨ Sample API Collection loaded! Switch to 'Test Collections' in API Tester to run batch tests.");
+}
+
+// Command Palette Keyboard Shortcut Listener (Ctrl + K or Cmd + K)
+window.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    openCmdPalette();
+  }
+  if (e.key === 'Escape') {
+    closeCmdPalette();
+  }
+});
+
+function openCmdPalette() {
+  const modal = document.getElementById('command-palette-modal');
+  const input = document.getElementById('cmd-palette-input');
+  if (modal) {
+    modal.style.display = 'flex';
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
+  }
+}
+
+function closeCmdPalette() {
+  const modal = document.getElementById('command-palette-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+// Bind C-Level feature buttons on load
+document.addEventListener('DOMContentLoaded', () => {
+  const btnExecSummary = document.getElementById('btn-export-exec-summary');
+  if (btnExecSummary) btnExecSummary.addEventListener('click', exportExecSummary);
+
+  const btnSampleCol = document.getElementById('btn-load-sample-collection');
+  if (btnSampleCol) btnSampleCol.addEventListener('click', loadSampleApiCollection);
+});
