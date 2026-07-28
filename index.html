@@ -1021,8 +1021,94 @@
 
         <!-- SETTINGS VIEW -->
         <section id="view-settings" class="view">
-          <div class="glass-panel" style="max-width: 650px;">
-            <h3 style="margin-bottom: 20px; font-size: 1.25rem;">Aegis Settings</h3>
+          
+          <!-- Top Header & Admin Toggle Bar -->
+          <div style="max-width: 720px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+              <h2 style="font-size: 1.4rem; font-weight: 700; color: #fff;">Account & System Settings</h2>
+              <p style="font-size: 0.85rem; color: hsl(215, 20%, 65%); margin-top: 4px;">Manage your user profile details and application preferences.</p>
+            </div>
+            <button class="btn btn-secondary" id="btn-toggle-admin-view" style="font-size: 0.8rem; padding: 6px 14px; display: flex; align-items: center; gap: 6px;">
+              <span id="admin-toggle-icon">🔐</span>
+              <span id="admin-toggle-label">Admin Settings</span>
+            </button>
+          </div>
+
+          <!-- 1. USER PROFILE SETTINGS (Visible to All Users) -->
+          <div class="glass-panel" id="user-profile-settings-card" style="max-width: 720px; margin-bottom: 20px;">
+            <h3 style="margin-bottom: 20px; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              My Profile Details
+            </h3>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div class="form-group">
+                <label class="form-label" for="profile-fullname">Full Name</label>
+                <input type="text" id="profile-fullname" class="form-input" placeholder="Your Full Name">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="profile-email">Email Address</label>
+                <input type="email" id="profile-email" class="form-input" placeholder="name@company.com" readonly style="opacity: 0.7; cursor: not-allowed;" title="Email address cannot be changed">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="profile-phone">Phone Number (10 Digits)</label>
+                <input type="tel" id="profile-phone" class="form-input" placeholder="e.g. 9876543210" inputmode="tel" maxlength="15">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="profile-country">Country</label>
+                <select id="profile-country" class="form-input">
+                  <option value="">Select Country...</option>
+                  <option value="United States">United States</option>
+                  <option value="India">India</option>
+                  <option value="United Kingdom">United Kingdom</option>
+                  <option value="Canada">Canada</option>
+                  <option value="Australia">Australia</option>
+                  <option value="Germany">Germany</option>
+                  <option value="France">France</option>
+                  <option value="Japan">Japan</option>
+                  <option value="Singapore">Singapore</option>
+                  <option value="United Arab Emirates">United Arab Emirates</option>
+                  <option value="Brazil">Brazil</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="profile-company">Company / Organization</label>
+                <input type="text" id="profile-company" class="form-input" placeholder="Company Name">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="profile-role">Job Role</label>
+                <select id="profile-role" class="form-input">
+                  <option value="Software Engineer">Software Engineer</option>
+                  <option value="QA / Test Automation">QA / Test Automation</option>
+                  <option value="DevOps / SRE">DevOps / SRE</option>
+                  <option value="Product Manager">Product Manager</option>
+                  <option value="Tech Lead / Architect">Tech Lead / Architect</option>
+                  <option value="Student / Researcher">Student / Researcher</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px; display: flex; justify-content: flex-end;">
+              <button class="btn btn-primary" id="btn-save-profile" style="height: 40px; padding: 0 24px;">Save Profile Changes</button>
+            </div>
+          </div>
+
+          <!-- 2. ADMIN ONLY AI & INFRASTRUCTURE CONFIGURATIONS (Hidden for normal users, Visible only for Admin) -->
+          <div class="glass-panel" id="admin-settings-card" style="max-width: 720px; margin-bottom: 20px; border-color: hsla(217, 91%, 60%, 0.4); display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h3 style="font-size: 1.15rem; color: var(--color-primary); display: flex; align-items: center; gap: 8px;">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Admin AI Engine &amp; API Configurations
+              </h3>
+              <span class="tc-priority-badge critical" style="font-size: 0.7rem;">Admin Access Required</span>
+            </div>
             
             <div class="form-group">
               <label class="form-label" for="gemini-api-key">Gemini API Key</label>
@@ -1033,7 +1119,7 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="gemini-model">Gemini Model</label>
+              <label class="form-label" for="gemini-model">Gemini Model Selection</label>
               <select id="gemini-model" class="form-input">
                 <option value="gemini-2.0-flash">Gemini 2.0 Flash (Recommended - Latest &amp; Free)</option>
                 <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast &amp; Free)</option>
@@ -1042,20 +1128,21 @@
             </div>
 
             <div style="margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 20px; display: flex; gap: 12px;">
-              <button class="btn btn-primary" id="btn-save-settings">Save Configurations</button>
-              <button class="btn btn-secondary" id="btn-remove-key" style="color: var(--color-critical);">Clear Key</button>
+              <button class="btn btn-primary" id="btn-save-settings">Save API Configurations</button>
+              <button class="btn btn-secondary" id="btn-remove-key" style="color: var(--color-critical);">Clear API Key</button>
             </div>
           </div>
 
-          <div class="glass-panel" style="max-width: 650px;">
-            <h3 style="margin-bottom: 12px;">Security & Privacy Guarantee</h3>
+          <!-- Security & Privacy Guarantee -->
+          <div class="glass-panel" style="max-width: 720px;">
+            <h3 style="margin-bottom: 12px;">Security &amp; Privacy Guarantee</h3>
             <p style="font-size: 0.9rem; line-height: 1.5; color: hsl(215, 20%, 75%);">
               Aegis is built on a client-side sandbox architecture.
             </p>
             <ul style="margin-left: 20px; margin-top: 10px; font-size: 0.9rem; color: hsl(215, 20%, 75%); display: flex; flex-direction: column; gap: 8px;">
               <li><strong>Local Processing:</strong> All folder directory exploration, tree reading, and file editing are done directly in your browser using standard HTML5 APIs.</li>
               <li><strong>Secure Transport:</strong> Your code is sent directly from your browser to Google's API servers. No intermediary server stores or processes your code.</li>
-              <li><strong>Encrypted Storage:</strong> Your Gemini API Key is stored only in your local browser's <code>localStorage</code>, which remains on your machine and cannot be accessed by other websites.</li>
+              <li><strong>Encrypted Storage:</strong> Credentials and user profile preferences are stored only in your local browser's <code>localStorage</code>.</li>
             </ul>
           </div>
         </section>

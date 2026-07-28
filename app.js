@@ -171,7 +171,18 @@ const el = {
   chatUserInput: document.getElementById('chat-user-input'),
   btnSendChat: document.getElementById('btn-send-chat'),
   
-  // Settings
+  // Settings & Profile
+  profileFullname: document.getElementById('profile-fullname'),
+  profileEmail: document.getElementById('profile-email'),
+  profilePhone: document.getElementById('profile-phone'),
+  profileCountry: document.getElementById('profile-country'),
+  profileCompany: document.getElementById('profile-company'),
+  profileRole: document.getElementById('profile-role'),
+  btnSaveProfile: document.getElementById('btn-save-profile'),
+  adminSettingsCard: document.getElementById('admin-settings-card'),
+  btnToggleAdminView: document.getElementById('btn-toggle-admin-view'),
+  adminToggleIcon: document.getElementById('admin-toggle-icon'),
+  adminToggleLabel: document.getElementById('admin-toggle-label'),
   geminiApiKey: document.getElementById('gemini-api-key'),
   geminiModel: document.getElementById('gemini-model'),
   btnSaveSettings: document.getElementById('btn-save-settings'),
@@ -320,17 +331,54 @@ function logConsole(message, type = 'info') {
 
 // Initialize Settings Inputs
 function initSettings() {
-  if (state.apiKey) {
+  if (state.apiKey && el.geminiApiKey) {
     el.geminiApiKey.value = '••••••••••••••••••••••••••••••••';
-    el.statusDot.classList.add('connected');
-    el.statusText.textContent = `Gemini Online (${state.model})`;
+    if (el.statusDot) el.statusDot.classList.add('connected');
+    if (el.statusText) el.statusText.textContent = `Gemini Online (${state.model})`;
     logConsole('Gemini API configured and online.', 'success');
   } else {
-    el.geminiApiKey.value = '';
-    el.statusDot.classList.remove('connected');
-    el.statusText.textContent = 'Gemini Offline';
+    if (el.geminiApiKey) el.geminiApiKey.value = '';
+    if (el.statusDot) el.statusDot.classList.remove('connected');
+    if (el.statusText) el.statusText.textContent = 'Gemini Offline';
   }
-  el.geminiModel.value = state.model;
+  if (el.geminiModel) el.geminiModel.value = state.model;
+
+  // Initialize User Profile settings & Admin access
+  initProfileSettings();
+  checkAdminAccess();
+}
+
+// Populate Profile Settings
+function initProfileSettings() {
+  const user = state.currentUser || JSON.parse(localStorage.getItem('aegis_current_user') || 'null');
+  if (!user) return;
+
+  if (el.profileFullname) el.profileFullname.value = user.full_name || user.name || '';
+  if (el.profileEmail) el.profileEmail.value = user.email || '';
+  if (el.profilePhone) el.profilePhone.value = user.phone || '';
+  if (el.profileCountry) el.profileCountry.value = user.country || '';
+  if (el.profileCompany) el.profileCompany.value = user.company || '';
+  if (el.profileRole) el.profileRole.value = user.role || 'Software Engineer';
+}
+
+// Check Admin Access & Toggle Visibility of Admin Settings Card
+function checkAdminAccess() {
+  const user = state.currentUser || JSON.parse(localStorage.getItem('aegis_current_user') || 'null');
+  const isAdmin = (user && (user.role === 'Admin' || user.email === 'admin@aegis.com')) || localStorage.getItem('aegis_admin_mode') === 'true';
+
+  if (el.adminSettingsCard) {
+    el.adminSettingsCard.style.display = isAdmin ? 'block' : 'none';
+  }
+
+  if (el.btnToggleAdminView) {
+    if (isAdmin) {
+      if (el.adminToggleIcon) el.adminToggleIcon.textContent = '🟢';
+      if (el.adminToggleLabel) el.adminToggleLabel.textContent = 'Admin Active';
+    } else {
+      if (el.adminToggleIcon) el.adminToggleIcon.textContent = '🔐';
+      if (el.adminToggleLabel) el.adminToggleLabel.textContent = 'Admin Settings';
+    }
+  }
 }
 
 // Router logic
@@ -384,30 +432,93 @@ function switchView(viewName) {
   }
 }
 
-// Save Settings
-el.btnSaveSettings.addEventListener('click', () => {
-  const key = el.geminiApiKey.value.trim();
-  const model = el.geminiModel.value;
+// Toggle Admin Mode Access
+if (el.btnToggleAdminView) {
+  el.btnToggleAdminView.addEventListener('click', () => {
+    const isCurrentlyAdmin = localStorage.getItem('aegis_admin_mode') === 'true';
+    if (!isCurrentlyAdmin) {
+      const passcode = prompt("Enter Admin Access Key (Default: admin):", "admin");
+      if (passcode === 'admin' || passcode === '1234') {
+        localStorage.setItem('aegis_admin_mode', 'true');
+        alert("🔐 Admin Mode unlocked! AI & Infrastructure settings are now visible.");
+      } else if (passcode !== null) {
+        alert("❌ Incorrect Admin Key.");
+        return;
+      }
+    } else {
+      localStorage.removeItem('aegis_admin_mode');
+      alert("Admin Mode deactivated.");
+    }
+    checkAdminAccess();
+  });
+}
 
-  if (key && key !== '••••••••••••••••••••••••••••••••') {
-    state.apiKey = key;
-    localStorage.setItem('aegis_api_key', key);
-  }
-  
-  state.model = model;
-  localStorage.setItem('aegis_model', model);
-  
-  initSettings();
-  logConsole('Settings saved successfully.', 'success');
-});
+// Save User Profile Changes
+if (el.btnSaveProfile) {
+  el.btnSaveProfile.addEventListener('click', () => {
+    const fullName = el.profileFullname ? el.profileFullname.value.trim() : '';
+    const phone = el.profilePhone ? el.profilePhone.value.trim() : '';
+    const country = el.profileCountry ? el.profileCountry.value : '';
+    const company = el.profileCompany ? el.profileCompany.value.trim() : '';
+    const role = el.profileRole ? el.profileRole.value : '';
 
-el.btnRemoveKey.addEventListener('click', () => {
-  state.apiKey = '';
-  localStorage.removeItem('aegis_api_key');
-  el.geminiApiKey.value = '';
-  initSettings();
-  logConsole('API key removed.', 'warn');
-});
+    if (phone) {
+      const digitCount = (phone.match(/\d/g) || []).length;
+      if (digitCount !== 10) {
+        alert("Phone number must contain exactly 10 digits (e.g. 9876543210).");
+        return;
+      }
+    }
+
+    const user = state.currentUser || JSON.parse(localStorage.getItem('aegis_current_user') || '{}');
+    user.full_name = fullName;
+    user.phone = phone;
+    user.country = country;
+    user.company = company;
+    user.role = role;
+
+    state.currentUser = user;
+    localStorage.setItem('aegis_current_user', JSON.stringify(user));
+
+    // Update sidebar profile widget
+    if (typeof updateSidebarProfileDisplay === 'function') {
+      updateSidebarProfileDisplay(user);
+    }
+
+    logConsole('User profile details updated successfully.', 'success');
+    alert("✅ Profile details updated successfully!");
+  });
+}
+
+// Save Admin AI Settings
+if (el.btnSaveSettings) {
+  el.btnSaveSettings.addEventListener('click', () => {
+    const key = el.geminiApiKey.value.trim();
+    const model = el.geminiModel.value;
+
+    if (key && key !== '••••••••••••••••••••••••••••••••') {
+      state.apiKey = key;
+      localStorage.setItem('aegis_api_key', key);
+    }
+    
+    state.model = model;
+    localStorage.setItem('aegis_model', model);
+    
+    initSettings();
+    logConsole('API Settings saved successfully.', 'success');
+    alert("✅ API configurations saved successfully!");
+  });
+}
+
+if (el.btnRemoveKey) {
+  el.btnRemoveKey.addEventListener('click', () => {
+    state.apiKey = '';
+    localStorage.removeItem('aegis_api_key');
+    el.geminiApiKey.value = '';
+    initSettings();
+    logConsole('API key removed.', 'warn');
+  });
+}
 
 // Folder Selection Handling
 el.folderPicker.addEventListener('click', async () => {
