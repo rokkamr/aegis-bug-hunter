@@ -146,6 +146,30 @@
         
         <!-- DASHBOARD VIEW -->
         <section id="view-dashboard" class="view active">
+          <!-- Quick Start & Mobile Download Banner -->
+          <div class="glass-panel" style="margin-bottom: 24px; background: linear-gradient(135deg, hsla(217, 91%, 60%, 0.15), hsla(263, 90%, 65%, 0.1)); border: 1px solid hsla(217, 91%, 60%, 0.3); padding: 20px 24px; position: relative; overflow: hidden; border-radius: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                  <span style="background: var(--color-primary); color: #fff; font-size: 0.68rem; font-weight: 800; padding: 2px 8px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Production Ready v2.0</span>
+                  <span style="color: hsl(215, 20%, 65%); font-size: 0.8rem;">• Autonomous AI QA Engine</span>
+                </div>
+                <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 4px; color: #fff;">Welcome to Aegis AI Bug Hunter</h2>
+                <p style="font-size: 0.85rem; color: hsl(215, 20%, 80%); max-width: 620px;">Automated E2E Web Audits, Code Vulnerability Scanning, API Testing, and Android Mobile Apps in one unified platform.</p>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="switchView('web-tester')" style="padding: 10px 16px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                  Run Web Audit
+                </button>
+                <a href="/aegis-ai.apk" class="btn btn-secondary" style="padding: 10px 16px; font-size: 0.85rem; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 8px; background: hsla(217, 35%, 20%, 0.6); color: #fff;">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Android APK (11.9MB)
+                </a>
+              </div>
+            </div>
+          </div>
+
           <!-- Main Stats -->
           <div class="stats-row">
             <div class="stat-card" id="stat-files">
