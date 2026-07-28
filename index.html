@@ -494,7 +494,8 @@
                   <h4 style="font-size: 0.9rem; color: hsl(215, 20%, 75%);">Live Sandbox Browser</h4>
                   <span class="bug-badge info" id="browser-view-tab-title" style="text-transform: none; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">about:blank</span>
                 </div>
-                <div style="flex-grow: 1; background-color: #0c0f16; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center;">
+                <div style="flex-grow: 1; background-color: #0c0f16; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; min-height: 240px;">
+                  <iframe id="browser-live-iframe" style="width: 100%; height: 100%; border: none; display: none; background: #fff;" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
                   <img id="browser-screenshot" style="width: 100%; height: 100%; object-fit: contain; display: none;" alt="Browser Output">
                   <div id="browser-canvas-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></div>
                   <div class="empty-state" id="browser-screen-empty">
