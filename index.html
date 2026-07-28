@@ -92,8 +92,14 @@
         <div id="user-profile-section" style="display: none; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 12px; width: 100%;">
           <div style="display: flex; align-items: center; gap: 8px; justify-content: space-between; width: 100%;">
             <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; flex: 1;">
-              <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--color-primary); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem; flex-shrink: 0; color: #fff;" id="user-avatar">U</div>
-              <span id="user-email-display" style="font-size: 0.78rem; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100px;">user@aegis.com</span>
+              <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--color-primary), var(--color-accent)); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem; flex-shrink: 0; color: #fff; box-shadow: inset 0 1px 1px rgba(255,255,255,0.4);" id="user-avatar">U</div>
+              <div style="display: flex; flex-direction: column; overflow: hidden; flex: 1;">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <span id="user-fullname-display" style="font-size: 0.82rem; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">User Name</span>
+                  <span id="user-country-badge" style="font-size: 0.65rem; background: hsla(217, 91%, 60%, 0.2); color: var(--color-primary); padding: 1px 4px; border-radius: 4px; font-weight: 600; display: none;">US</span>
+                </div>
+                <span id="user-email-display" style="font-size: 0.72rem; color: hsl(215, 20%, 65%); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">user@aegis.com</span>
+              </div>
             </div>
             <button id="btn-logout" style="background: transparent; border: none; color: var(--color-critical); cursor: pointer; font-size: 0.75rem; font-weight: 600; padding: 4px; flex-shrink: 0;">Logout</button>
           </div>
@@ -1026,8 +1032,8 @@
 
   <!-- Authentication Overlay -->
   <div class="auth-overlay" id="auth-overlay" style="display: flex;">
-    <div class="auth-card glass-panel">
-      <div class="brand" style="margin-bottom: 24px; justify-content: center;">
+    <div class="auth-card glass-panel" style="max-height: 90vh; overflow-y: auto; width: min(480px, 92vw); padding: 32px 28px;">
+      <div class="brand" style="margin-bottom: 20px; justify-content: center;">
         <div class="brand-icon">
           <svg viewBox="0 0 24 24">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -1038,16 +1044,71 @@
         <span class="brand-name">AEGIS AI</span>
       </div>
       
-      <h3 id="auth-title" style="text-align: center; margin-bottom: 24px;">Login to Aegis</h3>
+      <h3 id="auth-title" style="text-align: center; margin-bottom: 20px;">Login to Aegis</h3>
       
+      <!-- Signup Only Fields -->
+      <div class="form-group signup-only-field" style="display: none;">
+        <label class="form-label" for="auth-fullname">Full Name</label>
+        <input type="text" id="auth-fullname" class="form-input" placeholder="Alex Morgan">
+      </div>
+
       <div class="form-group">
         <label class="form-label" for="auth-email">Email Address</label>
         <input type="email" id="auth-email" class="form-input" placeholder="name@company.com">
+      </div>
+
+      <div class="form-group signup-only-field" style="display: none;">
+        <label class="form-label" for="auth-phone">Phone Number</label>
+        <input type="tel" id="auth-phone" class="form-input" placeholder="+1 (555) 000-1234">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" class="signup-only-field">
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" for="auth-country">Country</label>
+          <select id="auth-country" class="form-input">
+            <option value="">Select Country...</option>
+            <option value="United States">United States</option>
+            <option value="India">India</option>
+            <option value="United Kingdom">United Kingdom</option>
+            <option value="Canada">Canada</option>
+            <option value="Australia">Australia</option>
+            <option value="Germany">Germany</option>
+            <option value="France">France</option>
+            <option value="Japan">Japan</option>
+            <option value="Singapore">Singapore</option>
+            <option value="United Arab Emirates">United Arab Emirates</option>
+            <option value="Brazil">Brazil</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" for="auth-role">Job Role</label>
+          <select id="auth-role" class="form-input">
+            <option value="Software Engineer">Software Engineer</option>
+            <option value="QA / Test Automation">QA / Test Automation</option>
+            <option value="DevOps / SRE">DevOps / SRE</option>
+            <option value="Product Manager">Product Manager</option>
+            <option value="Tech Lead / Architect">Tech Lead / Architect</option>
+            <option value="Student / Researcher">Student / Researcher</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group signup-only-field" style="display: none;">
+        <label class="form-label" for="auth-company">Company / Organization</label>
+        <input type="text" id="auth-company" class="form-input" placeholder="Acme Inc (Optional)">
       </div>
       
       <div class="form-group">
         <label class="form-label" for="auth-password">Password</label>
         <input type="password" id="auth-password" class="form-input" placeholder="••••••••">
+      </div>
+
+      <div class="form-group signup-only-field" style="display: none;">
+        <label class="form-label" for="auth-confirm-password">Confirm Password</label>
+        <input type="password" id="auth-confirm-password" class="form-input" placeholder="••••••••">
       </div>
       
       <div id="auth-error-msg" style="color: var(--color-critical); font-size: 0.85rem; margin-bottom: 16px; text-align: center; display: none;"></div>

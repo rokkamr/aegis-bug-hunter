@@ -43,7 +43,12 @@ module.exports = async (req, res) => {
     return res.status(200).json({
       message: 'Login successful',
       token,
-      email: user.email
+      email: user.email,
+      fullName: user.full_name,
+      phone: user.phone,
+      country: user.country,
+      company: user.company,
+      role: user.role
     });
   } catch (err) {
     console.error('Login error:', err);

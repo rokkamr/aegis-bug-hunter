@@ -30,9 +30,21 @@ async function initDb() {
         email VARCHAR(255) UNIQUE NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
         salt VARCHAR(255) NOT NULL,
+        full_name VARCHAR(255),
+        phone VARCHAR(50),
+        country VARCHAR(100),
+        company VARCHAR(255),
+        role VARCHAR(100),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;
+
+    // Ensure columns exist on existing table
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(255);`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(50);`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS country VARCHAR(100);`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS company VARCHAR(255);`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(100);`;
 
     // Create projects table
     await sql`

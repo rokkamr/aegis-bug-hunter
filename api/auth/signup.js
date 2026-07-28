@@ -17,7 +17,7 @@ module.exports = async (req, res) => {
   try {
     await initDb();
     
-    const { email, password } = req.body;
+    const { email, password, fullName, phone, country, company, role } = req.body;
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
@@ -40,9 +40,9 @@ module.exports = async (req, res) => {
 
     // Insert user
     const insertResult = await sql`
-      INSERT INTO users (email, password_hash, salt)
-      VALUES (${emailLower}, ${passwordHash}, ${salt})
-      RETURNING id, email
+      INSERT INTO users (email, password_hash, salt, full_name, phone, country, company, role)
+      VALUES (${emailLower}, ${passwordHash}, ${salt}, ${fullName || ''}, ${phone || ''}, ${country || ''}, ${company || ''}, ${role || ''})
+      RETURNING id, email, full_name, phone, country, company, role
     `;
 
     const newUser = insertResult.rows[0];
@@ -51,7 +51,12 @@ module.exports = async (req, res) => {
     return res.status(201).json({
       message: 'User registered successfully',
       token,
-      email: newUser.email
+      email: newUser.email,
+      fullName: newUser.full_name,
+      phone: newUser.phone,
+      country: newUser.country,
+      company: newUser.company,
+      role: newUser.role
     });
   } catch (err) {
     console.error('Signup error:', err);

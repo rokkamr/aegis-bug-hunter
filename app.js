@@ -4,8 +4,16 @@
 const state = {
   token: localStorage.getItem('aegis_token') || '',
   userEmail: localStorage.getItem('aegis_user_email') || '',
+  userFullName: localStorage.getItem('aegis_user_fullname') || '',
+  userPhone: localStorage.getItem('aegis_user_phone') || '',
+  userCountry: localStorage.getItem('aegis_user_country') || '',
+  userCompany: localStorage.getItem('aegis_user_company') || '',
+  userRole: localStorage.getItem('aegis_user_role') || '',
   projectId: localStorage.getItem('aegis_project_id') || '',
-  apiKey: localStorage.getItem('aegis_api_key') || '',
+  apiKey: (() => {
+    let k = localStorage.getItem('aegis_api_key') || '';
+    return k;
+  })(),
   model: (() => {
     let m = localStorage.getItem('aegis_model') || 'gemini-1.5-flash';
     // Auto-migrate deprecated model names
@@ -43,8 +51,6 @@ const state = {
   // API Tester State
   apiHistory: JSON.parse(localStorage.getItem('aegis_api_history') || '[]'),
   apiActiveTab: 'headers',
-  apiCollections: [],
-  activeCollectionId: null,
   
   // Accessibility Checker State
   a11yResults: null,
@@ -52,7 +58,11 @@ const state = {
   // Performance Analyzer State
   perfResults: null,
 
-  // Tour State
+  // Advanced QA & B2B Features State
+  apiCollections: JSON.parse(localStorage.getItem('aegis_api_collections') || '[]'),
+  activeCollectionId: null,
+  activeCollectionRunLogs: [],
+  collaborators: [],
   tourStep: 0
 };
 
@@ -63,6 +73,12 @@ const el = {
   authTitle: document.getElementById('auth-title'),
   authEmail: document.getElementById('auth-email'),
   authPassword: document.getElementById('auth-password'),
+  authFullname: document.getElementById('auth-fullname'),
+  authPhone: document.getElementById('auth-phone'),
+  authCountry: document.getElementById('auth-country'),
+  authCompany: document.getElementById('auth-company'),
+  authRole: document.getElementById('auth-role'),
+  authConfirmPassword: document.getElementById('auth-confirm-password'),
   authErrorMsg: document.getElementById('auth-error-msg'),
   btnAuthSubmit: document.getElementById('btn-auth-submit'),
   authToggleText: document.getElementById('auth-toggle-text'),
@@ -70,6 +86,8 @@ const el = {
   userProfileSection: document.getElementById('user-profile-section'),
   userAvatar: document.getElementById('user-avatar'),
   userEmailDisplay: document.getElementById('user-email-display'),
+  userFullnameDisplay: document.getElementById('user-fullname-display'),
+  userCountryBadge: document.getElementById('user-country-badge'),
   btnLogout: document.getElementById('btn-logout'),
 
   navItems: document.querySelectorAll('.nav-item'),
@@ -3484,21 +3502,31 @@ function renderPerfResults(data) {
 let authMode = 'login'; // 'login' or 'signup'
 
 function initAuth() {
+  const signupFields = document.querySelectorAll('.signup-only-field');
+
   if (el.linkAuthToggle) {
     el.linkAuthToggle.addEventListener('click', (e) => {
       e.preventDefault();
       if (authMode === 'login') {
         authMode = 'signup';
         el.authTitle.textContent = 'Create Aegis Account';
-        el.btnAuthSubmit.textContent = 'Sign Up';
+        el.btnAuthSubmit.textContent = 'Create Account & Sign Up';
         el.authToggleText.textContent = 'Already have an account?';
         el.linkAuthToggle.textContent = 'Sign In';
+        signupFields.forEach(f => {
+          if (f.style.gridTemplateColumns) {
+            f.style.display = 'grid';
+          } else {
+            f.style.display = 'block';
+          }
+        });
       } else {
         authMode = 'login';
         el.authTitle.textContent = 'Login to Aegis';
         el.btnAuthSubmit.textContent = 'Sign In';
         el.authToggleText.textContent = "Don't have an account?";
         el.linkAuthToggle.textContent = 'Sign Up';
+        signupFields.forEach(f => f.style.display = 'none');
       }
       el.authErrorMsg.style.display = 'none';
     });
@@ -3520,8 +3548,24 @@ function updateAuthState() {
     if (el.authOverlay) el.authOverlay.style.display = 'none';
     if (el.userProfileSection) el.userProfileSection.style.display = 'block';
     if (el.userEmailDisplay) el.userEmailDisplay.textContent = state.userEmail;
-    if (el.userAvatar && state.userEmail) {
-      el.userAvatar.textContent = state.userEmail.charAt(0).toUpperCase();
+    
+    // Render Full Name & Country Badge
+    const displayName = state.userFullName || state.userEmail.split('@')[0];
+    if (el.userFullnameDisplay) el.userFullnameDisplay.textContent = displayName;
+    
+    if (el.userAvatar) {
+      const initial = displayName.charAt(0).toUpperCase();
+      el.userAvatar.textContent = initial;
+    }
+
+    if (el.userCountryBadge) {
+      if (state.userCountry) {
+        el.userCountryBadge.textContent = state.userCountry.substring(0, 2).toUpperCase();
+        el.userCountryBadge.title = state.userCountry;
+        el.userCountryBadge.style.display = 'inline-block';
+      } else {
+        el.userCountryBadge.style.display = 'none';
+      }
     }
     
     // Auto-reload test cases from DB
@@ -3541,21 +3585,52 @@ async function handleAuthSubmit() {
     return;
   }
 
-  if (authMode === 'signup' && password.length < 6) {
-    showAuthError('Password must be at least 6 characters long');
-    return;
+  // Extra validation for signup mode
+  let fullName = '', phone = '', country = '', company = '', role = '';
+  if (authMode === 'signup') {
+    fullName = el.authFullname ? el.authFullname.value.trim() : '';
+    phone = el.authPhone ? el.authPhone.value.trim() : '';
+    country = el.authCountry ? el.authCountry.value : '';
+    company = el.authCompany ? el.authCompany.value.trim() : '';
+    role = el.authRole ? el.authRole.value : '';
+    const confirmPassword = el.authConfirmPassword ? el.authConfirmPassword.value : '';
+
+    if (!fullName) {
+      showAuthError('Please enter your full name');
+      return;
+    }
+    if (!phone) {
+      showAuthError('Please enter your phone number');
+      return;
+    }
+    if (!country) {
+      showAuthError('Please select your country');
+      return;
+    }
+    if (password.length < 6) {
+      showAuthError('Password must be at least 6 characters long');
+      return;
+    }
+    if (password !== confirmPassword) {
+      showAuthError('Passwords do not match');
+      return;
+    }
   }
 
   el.btnAuthSubmit.setAttribute('disabled', 'true');
-  el.btnAuthSubmit.textContent = authMode === 'login' ? 'Signing In...' : 'Signing Up...';
+  el.btnAuthSubmit.textContent = authMode === 'login' ? 'Signing In...' : 'Creating Account...';
   el.authErrorMsg.style.display = 'none';
 
   try {
     const url = authMode === 'login' ? '/api/auth/login' : '/api/auth/signup';
+    const payload = authMode === 'login' 
+      ? { email, password } 
+      : { email, password, fullName, phone, country, company, role };
+
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify(payload)
     });
 
     const data = await response.json();
@@ -3563,18 +3638,32 @@ async function handleAuthSubmit() {
       throw new Error(data.error || 'Authentication failed');
     }
 
-    // Success
+    // Success — Save Token and User Profile Properties
     state.token = data.token;
     state.userEmail = data.email;
+    state.userFullName = data.fullName || fullName;
+    state.userPhone = data.phone || phone;
+    state.userCountry = data.country || country;
+    state.userCompany = data.company || company;
+    state.userRole = data.role || role;
+
     localStorage.setItem('aegis_token', data.token);
     localStorage.setItem('aegis_user_email', data.email);
+    if (state.userFullName) localStorage.setItem('aegis_user_fullname', state.userFullName);
+    if (state.userPhone) localStorage.setItem('aegis_user_phone', state.userPhone);
+    if (state.userCountry) localStorage.setItem('aegis_user_country', state.userCountry);
+    if (state.userCompany) localStorage.setItem('aegis_user_company', state.userCompany);
+    if (state.userRole) localStorage.setItem('aegis_user_role', state.userRole);
 
     // Reset inputs
     el.authEmail.value = '';
     el.authPassword.value = '';
+    if (el.authFullname) el.authFullname.value = '';
+    if (el.authPhone) el.authPhone.value = '';
+    if (el.authConfirmPassword) el.authConfirmPassword.value = '';
 
     updateAuthState();
-    logConsole('[Auth]', `Logged in as ${data.email}`, 'info');
+    logConsole('[Auth]', `Logged in as ${state.userFullName || data.email}`, 'info');
   } catch (err) {
     showAuthError(err.message);
   } finally {
@@ -3586,15 +3675,28 @@ async function handleAuthSubmit() {
 function handleLogout() {
   state.token = '';
   state.userEmail = '';
+  state.userFullName = '';
+  state.userPhone = '';
+  state.userCountry = '';
+  state.userCompany = '';
+  state.userRole = '';
   state.projectId = '';
   state.activeCollectionId = null;
+
   localStorage.removeItem('aegis_token');
   localStorage.removeItem('aegis_user_email');
+  localStorage.removeItem('aegis_user_fullname');
+  localStorage.removeItem('aegis_user_phone');
+  localStorage.removeItem('aegis_user_country');
+  localStorage.removeItem('aegis_user_company');
+  localStorage.removeItem('aegis_user_role');
   localStorage.removeItem('aegis_project_id');
-  updateAuthState();
-  logConsole('[Auth]', 'Logged out', 'info');
+
   if (el.projectSharingPanel) el.projectSharingPanel.style.display = 'none';
   if (el.collectionRunnerPanel) el.collectionRunnerPanel.style.display = 'none';
+
+  updateAuthState();
+  logConsole('[Auth]', 'Logged out successfully', 'info');
 }
 
 function showAuthError(msg) {
