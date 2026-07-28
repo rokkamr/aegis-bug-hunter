@@ -2778,23 +2778,24 @@ let lastApiRequest = null;
 let lastApiResponse = null;
 
 function addHeaderRow(key = '', value = '') {
-  if (!el.apiHeadersContainer) return;
+  const container = document.getElementById('api-headers-container') || el.apiHeadersContainer;
+  if (!container) return;
 
   const row = document.createElement('div');
   row.className = 'api-header-row';
-  row.style.cssText = 'display:flex; gap:8px; margin-bottom:6px; align-items:center;';
+  row.style.cssText = 'display:flex; gap:10px; margin-bottom:8px; align-items:center; width:100%;';
 
   row.innerHTML = `
-    <input type="text" class="form-input api-header-key" placeholder="Header name" value="${escapeHTML(key)}" style="flex:1; font-size:0.85rem; padding:6px 10px;">
-    <input type="text" class="form-input api-header-value" placeholder="Value" value="${escapeHTML(value)}" style="flex:1; font-size:0.85rem; padding:6px 10px;">
-    <button class="btn btn-secondary api-header-remove" style="padding:4px 8px; font-size:0.8rem; color:var(--color-critical); flex-shrink:0;">✕</button>
+    <input type="text" class="form-input api-header-key" placeholder="Header Name (e.g. Content-Type)" value="${escapeHTML(key)}" style="flex:1; font-size:0.85rem; padding:8px 12px; height:38px;">
+    <input type="text" class="form-input api-header-value" placeholder="Value (e.g. application/json)" value="${escapeHTML(value)}" style="flex:1; font-size:0.85rem; padding:8px 12px; height:38px;">
+    <button class="btn btn-secondary api-header-remove" style="padding:4px 10px; font-size:0.85rem; color:var(--color-critical); flex-shrink:0; height:38px;" title="Remove Header">✕</button>
   `;
 
   row.querySelector('.api-header-remove').addEventListener('click', () => {
     removeHeaderRow(row);
   });
 
-  el.apiHeadersContainer.appendChild(row);
+  container.appendChild(row);
 }
 
 function removeHeaderRow(rowEl) {
@@ -2804,21 +2805,21 @@ function removeHeaderRow(rowEl) {
 }
 
 function toggleAuthFields() {
-  if (!el.apiAuthType) return;
-  const authType = el.apiAuthType.value;
+  const select = document.getElementById('api-auth-type') || el.apiAuthType;
+  if (!select) return;
+  const authType = select.value;
 
-  // Hide all auth fields first
-  if (el.apiAuthToken) el.apiAuthToken.style.display = 'none';
-  if (el.apiAuthUsername) el.apiAuthUsername.style.display = 'none';
-  if (el.apiAuthPassword) el.apiAuthPassword.style.display = 'none';
+  const tokenInput = document.getElementById('api-auth-token') || el.apiAuthToken;
+  const userInput = document.getElementById('api-auth-username') || el.apiAuthUsername;
+  const passInput = document.getElementById('api-auth-password') || el.apiAuthPassword;
 
-  if (authType === 'bearer' || authType === 'apikey') {
-    if (el.apiAuthToken) el.apiAuthToken.style.display = 'block';
-  } else if (authType === 'basic') {
-    if (el.apiAuthUsername) el.apiAuthUsername.style.display = 'block';
-    if (el.apiAuthPassword) el.apiAuthPassword.style.display = 'block';
-  }
-  // 'none' — everything stays hidden
+  const tokenGroup = tokenInput ? tokenInput.closest('.form-group') : null;
+  const userGroup = userInput ? userInput.closest('.form-group') : null;
+  const passGroup = passInput ? passInput.closest('.form-group') : null;
+
+  if (tokenGroup) tokenGroup.style.display = (authType === 'bearer' || authType === 'apikey') ? 'block' : 'none';
+  if (userGroup) userGroup.style.display = (authType === 'basic') ? 'block' : 'none';
+  if (passGroup) passGroup.style.display = (authType === 'basic') ? 'block' : 'none';
 }
 
 async function sendApiRequest() {
@@ -3200,24 +3201,48 @@ function initApiTester() {
     toggleAuthFields(); // Set initial state
   }
 
-  // Tab switching
+  // Tab switching for Headers, Auth, Body
   const apiTabs = document.querySelectorAll('.api-tab');
   const apiTabContents = document.querySelectorAll('.api-tab-content');
+
   apiTabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      apiTabs.forEach(t => t.classList.remove('active'));
-      apiTabContents.forEach(c => c.classList.remove('active'));
+    tab.addEventListener('click', (e) => {
+      e.preventDefault();
+      const tabName = tab.getAttribute('data-api-tab') || tab.getAttribute('data-tab');
+      if (!tabName) return;
+
+      // Deactivate all tabs
+      apiTabs.forEach(t => {
+        t.classList.remove('active');
+        t.style.color = 'hsl(215, 20%, 55%)';
+        t.style.borderBottomColor = 'transparent';
+      });
+
+      // Hide all tab contents
+      apiTabContents.forEach(c => {
+        c.classList.remove('active');
+        c.style.display = 'none';
+      });
+
+      // Activate clicked tab
       tab.classList.add('active');
-      const targetId = tab.getAttribute('data-tab');
-      if (targetId) {
-        const targetContent = document.getElementById(targetId);
-        if (targetContent) targetContent.classList.add('active');
+      tab.style.color = 'var(--color-primary)';
+      tab.style.borderBottomColor = 'var(--color-primary)';
+
+      // Show target content container
+      const targetContent = document.getElementById(`api-tab-${tabName}`) || document.getElementById(tabName);
+      if (targetContent) {
+        targetContent.classList.add('active');
+        targetContent.style.display = 'block';
       }
     });
   });
 
-  // Add one default header row
-  addHeaderRow('Content-Type', 'application/json');
+  // Add default header rows if empty
+  const headersContainer = document.getElementById('api-headers-container');
+  if (headersContainer && headersContainer.children.length === 0) {
+    addHeaderRow('Content-Type', 'application/json');
+  }
 
   // Render history on load
   renderApiHistory();
