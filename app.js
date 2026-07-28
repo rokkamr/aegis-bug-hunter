@@ -3901,8 +3901,12 @@ function initAuth() {
     el.btnAuthSubmit.addEventListener('click', handleAuthSubmit);
   }
 
-  if (el.btnLogout) {
-    el.btnLogout.addEventListener('click', handleLogout);
+  const btnLogout = document.getElementById('btn-logout') || el.btnLogout;
+  if (btnLogout) {
+    btnLogout.addEventListener('click', (e) => {
+      e.preventDefault();
+      handleLogout();
+    });
   }
 
   const btnCloseAuth = document.getElementById('btn-close-auth-modal');
@@ -4067,13 +4071,13 @@ async function handleAuthSubmit() {
 }
 
 function handleLogout() {
-  state.token = 'guest_token';
-  state.userEmail = 'guest@aegis.com';
-  state.userFullName = 'Guest Developer';
+  state.token = '';
+  state.userEmail = '';
+  state.userFullName = '';
   state.userPhone = '';
   state.userCountry = '';
   state.userCompany = '';
-  state.userRole = 'Guest';
+  state.userRole = '';
   state.projectId = '';
   state.currentUser = null;
   state.activeCollectionId = null;
@@ -4091,8 +4095,15 @@ function handleLogout() {
 
   if (el.projectSharingPanel) el.projectSharingPanel.style.display = 'none';
   if (el.collectionRunnerPanel) el.collectionRunnerPanel.style.display = 'none';
+  
   checkAdminAccess();
   updateAuthState();
+  
+  // Prompt Auth Modal for login
+  if (el.authOverlay) el.authOverlay.style.display = 'flex';
+  if (el.authTitle) el.authTitle.textContent = 'Login to Aegis';
+  if (el.btnAuthSubmit) el.btnAuthSubmit.textContent = 'Sign In';
+
   logConsole('[Auth]', 'Logged out successfully', 'info');
 }
 
