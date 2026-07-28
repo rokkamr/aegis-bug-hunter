@@ -3923,6 +3923,22 @@ function initAuth() {
     });
   }
 
+  const btnTogglePassword = document.getElementById('btn-toggle-password');
+  const authPassword = document.getElementById('auth-password');
+  if (btnTogglePassword && authPassword) {
+    btnTogglePassword.addEventListener('click', () => {
+      if (authPassword.type === 'password') {
+        authPassword.type = 'text';
+        btnTogglePassword.textContent = '🔒';
+        btnTogglePassword.title = 'Hide Password';
+      } else {
+        authPassword.type = 'password';
+        btnTogglePassword.textContent = '👁️';
+        btnTogglePassword.title = 'Toggle Password Visibility';
+      }
+    });
+  }
+
   updateAuthState();
 }
 
