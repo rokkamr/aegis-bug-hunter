@@ -3532,6 +3532,13 @@ function initAuth() {
     });
   }
 
+  if (el.authPhone) {
+    // Real-time numeric filtering (permits numbers 0-9, optional +, spaces, hyphens, parentheses)
+    el.authPhone.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/[^0-9+ \-\(\)]/g, '');
+    });
+  }
+
   if (el.btnAuthSubmit) {
     el.btnAuthSubmit.addEventListener('click', handleAuthSubmit);
   }
@@ -3603,6 +3610,15 @@ async function handleAuthSubmit() {
       showAuthError('Please enter your phone number');
       return;
     }
+    
+    // Phone Number Strict Numeric Validation
+    const digitCount = (phone.match(/\d/g) || []).length;
+    const isPhoneValid = /^\+?[0-9\s\-\(\)]{7,20}$/.test(phone) && digitCount >= 7 && digitCount <= 15;
+    if (!isPhoneValid) {
+      showAuthError('Phone number must contain numbers only (7 to 15 digits, e.g. +15550001234)');
+      return;
+    }
+
     if (!country) {
       showAuthError('Please select your country');
       return;
