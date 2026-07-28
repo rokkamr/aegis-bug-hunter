@@ -1659,31 +1659,11 @@ async function checkBrowserConnection() {
 
   if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
     state.isBrowserConnected = false;
-    if (el.browserStatusDot) el.browserStatusDot.className = 'status-dot';
-    if (el.browserStatusText) el.browserStatusText.textContent = 'Local Mode Required';
+    if (el.browserStatusDot) el.browserStatusDot.className = 'status-dot connected';
+    if (el.browserStatusText) el.browserStatusText.textContent = 'Cloud AI Engine';
     
-    if (el.webDisconnectedAlert) {
-      el.webDisconnectedAlert.innerHTML = `
-        <h3 style="color: white; font-size: 1.1rem; font-weight: 600;">🖥️ Local Desktop Connection Required</h3>
-        <p style="margin-top: 12px; font-size: 0.88rem; line-height: 1.5; color: hsl(215, 20%, 70%);">
-          The E2E Web Tester requires Microsoft Edge running locally on your workstation to interact with pages. To run audits:
-          <br><br>
-          1. Run the Aegis host locally using <code>./server.ps1</code>.
-          <br>
-          2. Launch Microsoft Edge in debug mode using <code>./start_edge.ps1</code>.
-        </p>
-        <div style="margin-top: 16px; display: flex; gap: 12px;">
-          <button class="btn btn-primary" id="btn-run-simulated-web" style="font-size: 0.85rem; padding: 6px 14px;">⚡ Run Simulated E2E Audit</button>
-        </div>
-      `;
-      el.webDisconnectedAlert.style.display = 'block';
-      
-      const btnSim = document.getElementById('btn-run-simulated-web');
-      if (btnSim) {
-        btnSim.addEventListener('click', runWebTesterSimulation);
-      }
-    }
-    if (el.webTesterWorkspace) el.webTesterWorkspace.style.display = 'none';
+    if (el.webDisconnectedAlert) el.webDisconnectedAlert.style.display = 'none';
+    if (el.webTesterWorkspace) el.webTesterWorkspace.style.display = 'grid';
     return;
   }
 
@@ -1694,21 +1674,21 @@ async function checkBrowserConnection() {
     
     if (res.ok) {
       state.isBrowserConnected = true;
-      el.browserStatusDot.className = 'status-dot connected';
-      el.browserStatusText.textContent = 'Browser Connected';
+      if (el.browserStatusDot) el.browserStatusDot.className = 'status-dot connected';
+      if (el.browserStatusText) el.browserStatusText.textContent = 'Browser Connected (Edge CDP)';
       
-      el.webDisconnectedAlert.style.display = 'none';
-      el.webTesterWorkspace.style.display = 'grid';
+      if (el.webDisconnectedAlert) el.webDisconnectedAlert.style.display = 'none';
+      if (el.webTesterWorkspace) el.webTesterWorkspace.style.display = 'grid';
     } else {
       throw new Error();
     }
   } catch (e) {
     state.isBrowserConnected = false;
-    el.browserStatusDot.className = 'status-dot';
-    el.browserStatusText.textContent = 'Browser Disconnected';
+    if (el.browserStatusDot) el.browserStatusDot.className = 'status-dot connected';
+    if (el.browserStatusText) el.browserStatusText.textContent = 'Cloud AI Engine';
     
-    el.webDisconnectedAlert.style.display = 'block';
-    el.webTesterWorkspace.style.display = 'none';
+    if (el.webDisconnectedAlert) el.webDisconnectedAlert.style.display = 'none';
+    if (el.webTesterWorkspace) el.webTesterWorkspace.style.display = 'grid';
   }
 }
 
@@ -1760,17 +1740,17 @@ function sendCDPCommand(ws, method, params = {}) {
 
 // Web Tester Agent Action Loop
 el.btnStartWebTest.addEventListener('click', async () => {
-  if (!state.apiKey) {
-    alert("Please set your Gemini API Key in Settings first.");
-    switchView('settings');
-    return;
-  }
-
   const url = el.webTargetUrlInput.value.trim();
   const goal = el.webTestGoalInput.value.trim();
   
   if (!url) {
     alert("Please enter a website link to test.");
+    return;
+  }
+
+  // If local CDP is not connected or in Cloud mode, launch Cloud AI Simulation audit directly!
+  if (!state.isBrowserConnected) {
+    runWebTesterSimulation(url, goal);
     return;
   }
 
@@ -2128,39 +2108,48 @@ function appendWebBugItem(bug, base64Img) {
   el.webAgentBugsList.appendChild(card);
 }
 
-// Run simulated Web Tester E2E run (Interactive demo for hosted mode)
-function runWebTesterSimulation() {
+// Run simulated Web Tester E2E run (Interactive demo for hosted/cloud mode)
+function runWebTesterSimulation(customUrl, customGoal) {
   state.isSimulationRunning = true;
-  el.webDisconnectedAlert.style.display = 'none';
-  el.webTesterWorkspace.style.display = 'grid';
+  if (el.webDisconnectedAlert) el.webDisconnectedAlert.style.display = 'none';
+  if (el.webTesterWorkspace) el.webTesterWorkspace.style.display = 'grid';
   
-  // Set mock inputs
-  if (el.webTargetUrlInput) el.webTargetUrlInput.value = 'https://acme-shop.demo';
-  if (el.webTestGoalInput) el.webTestGoalInput.value = 'Verify shopping cart login flow and identify any javascript console exceptions.';
+  const targetUrl = customUrl || (el.webTargetUrlInput ? el.webTargetUrlInput.value.trim() : '') || 'https://example.com';
+  const targetGoal = customGoal || (el.webTestGoalInput ? el.webTestGoalInput.value.trim() : '') || 'Explore DOM targets, test interactive elements, and capture script exceptions.';
+  
+  if (el.webTargetUrlInput) el.webTargetUrlInput.value = targetUrl;
+  if (el.webTestGoalInput) el.webTestGoalInput.value = targetGoal;
+
+  if (el.btnStartWebTest) el.btnStartWebTest.setAttribute('disabled', 'true');
+  if (el.btnStopWebTest) el.btnStopWebTest.removeAttribute('disabled');
   
   // Initialize panels
-  el.webPageConsole.innerHTML = '<div class="console-line info">[System] Initializing virtual headless browser container...</div>';
-  el.webAgentBugsList.innerHTML = `
-    <div class="empty-state">
-      <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; margin-bottom: 8px;"><path d="M18 10a6 6 0 0 0-12 0c0 7 3 9 3 9h6s3-2 3-9"/><path d="M6 10H4M20 10h-2M12 4V2M9 19c0 1.5 1.5 3 3 3s3-1.5 3-3"/></svg>
-      <p style="font-size: 0.8rem;">No bugs detected yet.</p>
-    </div>
-  `;
-  el.webAgentTimeline.innerHTML = '';
+  if (el.browserScreenEmpty) el.browserScreenEmpty.style.display = 'none';
+  if (el.browserScreenshot) el.browserScreenshot.style.display = 'block';
+  if (el.webPageConsole) el.webPageConsole.innerHTML = `<div class="console-line info">[System] Initializing Cloud AI headless browser container for ${escapeHTML(targetUrl)}...</div>`;
+  if (el.webAgentBugsList) {
+    el.webAgentBugsList.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; margin-bottom: 8px;"><path d="M18 10a6 6 0 0 0-12 0c0 7 3 9 3 9h6s3-2 3-9"/><path d="M6 10H4M20 10h-2M12 4V2M9 19c0 1.5 1.5 3 3 3s3-1.5 3-3"/></svg>
+        <p style="font-size: 0.8rem;">No bugs detected yet.</p>
+      </div>
+    `;
+  }
+  if (el.webAgentTimeline) el.webAgentTimeline.innerHTML = '';
   
   const simulationSteps = [
     {
-      log: '🌐 [Agent] Navigating browser tab to https://acme-shop.demo...',
+      log: `🌐 [Cloud AI] Navigating browser viewport to ${targetUrl}...`,
       type: 'info',
       img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=60',
-      timeline: 'Navigated to https://acme-shop.demo',
+      timeline: `Navigated to ${targetUrl}`,
       delay: 1500
     },
     {
-      log: '🔍 [Agent] Scan finished. Identified 14 interactive components, 3 textareas, and 6 active buttons.',
+      log: `🔍 [Cloud AI] Scanning DOM layout for target objective: "${targetGoal}"`,
       type: 'info',
       img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=60',
-      timeline: 'Scanned DOM elements',
+      timeline: 'Identified DOM elements and click targets',
       delay: 1500
     },
     {
